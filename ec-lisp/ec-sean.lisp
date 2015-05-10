@@ -1,6 +1,4 @@
-
-
-;;; Project 1: Build a simple evolutionary computation system.
+;;; Project 4: Build a simple evolutionary computation system.
 
 ;;; This is a nontrivial project to start with.  Do not discuss
 ;;; programming issues related to this project with other groups.
@@ -111,34 +109,31 @@ new slot is created).  EQUALP is the test used for duplicates."
 	  (push candidate bag))))))
 
 
-
-
-
-
-
 ;;;;;; TOP-LEVEL EVOLUTIONARY COMPUTATION FUNCTIONS 
-
-
-
 
 
 ;;; TOURNAMENT SELECTION
 
 (defparameter *tournament-size* 7)
+
 (defun tournament-select-one (population fitnesses)
   "Does one tournament selection and returns the selected individual."
 
-  ;;; IMPLEMENT ME  
-  )
+;;	(let ((index (random-integer (length population)))
+;;				(best-ind (aref population index))
+;;				(best-fit (aref fitnesses index)))
+;;		(return (
+;;	) 
+)
 
 
 
 (defun tournament-selector (num population fitnesses)
   "Does NUM tournament selections, and puts them all in a list"
 
-    ;;; IMPLEMENT ME
+	(
   )
-
+)
 
 (defun simple-printer (pop fitnesses)  ;; I'm nice and am providing this for you.  :-)
   "Determines the individual in pop with the best (highest) fitness, then
@@ -224,9 +219,15 @@ POP-SIZE, using various functions"
 (defun boolean-vector-creator ()
   "Creates a boolean-vector *boolean-vector-length* in size, filled with
 random Ts and NILs, or with random 1s and 0s, your option."
-    ;;; IMPLEMENT ME
+	(let ((vec (make-array *boolean-vector-length* :initial-element nil)))
+		(dotimes (x *boolean-vector-length*)
+			(if (< (random 1.0) 0.5)
+				(setf (svref vec x) 0)
+				(setf (svref vec x) 1)
+			)
+		)	vec)
+)
 
-  )
 
 
 (defparameter *boolean-crossover-probability* 0.2)
@@ -537,7 +538,7 @@ ind1 and ind2 are each mutated using subtree mutation, where
 the size of the newly-generated subtrees is pickedc at random
 from 1 to 10 inclusive.  Doesn't damage ind1 or ind2.  Returns
 the two modified versions as a list."
-
+	
     ;;; IMPLEMENT ME
 )
 
@@ -900,3 +901,8 @@ more pellets, higher (better) fitness."
         :evaluator #'gp-artificial-ant-evaluator
 	:printer #'simple-printer)
 |#
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; Test Code for boolean-vector-creator
+(print (boolean-vector-creator))

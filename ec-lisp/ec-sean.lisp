@@ -216,9 +216,21 @@ POP-SIZE, using various functions"
 (defparameter *boolean-problem* :max-ones)
 ;; perhaps other problems might include... 
 
+(defun max-ones (vec)
+	"The total number of ones in the vector vec."
+	(values (reduce #'+ abc)))
+
+(defun leading-ones (vec)
+	"Counts the number of ones in your vector,
+	starting at the beginning, until a zero is encountered."
+	(dotimes (x (length vec))
+		(if (equal (svref vec x) 0)
+			(return x))))
+
 (defun boolean-vector-creator ()
   "Creates a boolean-vector *boolean-vector-length* in size, filled with
-random Ts and NILs, or with random 1s and 0s, your option."
+random Ts and NILs, or with random 1s and 0s, your option.i
+(Algorithm 21.)"
 	(let ((vec (make-array *boolean-vector-length* :initial-element nil)))
 		(dotimes (x *boolean-vector-length*)
 			(if (< (random 1.0) 0.5)
@@ -228,15 +240,15 @@ random Ts and NILs, or with random 1s and 0s, your option."
 		)	vec)
 )
 
-
-
 (defparameter *boolean-crossover-probability* 0.2)
 (defparameter *boolean-mutation-probability* 0.01)
+
 (defun boolean-vector-modifier (ind1 ind2)
   "Copies and modifies ind1 and ind2 by crossing them over with a uniform crossover,
 then mutates the children.  *crossover-probability* is the probability that any
 given allele will crossover.  *mutation-probability* is the probability that any
-given allele in a child will mutate.  Mutation simply flips the bit of the allele."
+given allele in a child will mutate.  Mutation simply flips the bit of the allele.
+(Algorithm 25.)"
 
     ;;; IMPLEMENT ME
 )

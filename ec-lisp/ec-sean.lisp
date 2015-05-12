@@ -73,6 +73,16 @@ Information on compiling code and doing compiler optimizations can be found in t
 
 
 ;;; Useful Functions and Macros
+(defparameter *debug* t)
+
+(defun dprint (some-variable &optional (additional-message '()))
+	"Debug Print - useful for allowing error/status messages
+to be printed while debug=t."
+  (if *debug*
+    (progn
+      (if additional-message (print additional-message) nil)
+      (print some-variable))
+    some-variable))
 
 (defmacro swap (elt1 elt2)
   "Swaps elt1 and elt2, using SETF.  Returns nil."
@@ -218,7 +228,7 @@ POP-SIZE, using various functions"
 
 (defun max-ones (vec)
 	"The total number of ones in the vector vec."
-	(values (reduce #'+ abc)))
+	(values (reduce #'+ vec)))
 
 (defun leading-ones (vec)
 	"Counts the number of ones in your vector,
@@ -248,16 +258,28 @@ random Ts and NILs, or with random 1s and 0s, your option.i
 then mutates the children.  *crossover-probability* is the probability that any
 given allele will crossover.  *mutation-probability* is the probability that any
 given allele in a child will mutate.  Mutation simply flips the bit of the allele.
-(Algorithm 25.)"
+(Algorithms 22 & 25.)"
+	(dotimes (x (length ind1))
+		(if (< (random 1.0) *boolean-crossover-probability*)
+			(swap (svref ind1 x) (svref ind2 x))
+		)
+;;; These don't feel very "lispy"		
+		(if (< (random 1.0) *boolean-mutation-probability*)
+			(if (eql (svref ind1 (dprint x "mutate 1")) 1)
+				(setf (svref ind1 x) 0)
+				(setf (svref ind1 x) 0)))
+		(if (< (random 1.0) *boolean-mutation-probability*)
+			(if (eql (svref ind2 (dprint x "mutate 2")) 1)
+			  (setf (svref ind2 x) 0)
+			  (setf (svref ind2 x) 0)))
 
-    ;;; IMPLEMENT ME
+	) (list ind1 ind2)
 )
 
 (defun boolean-vector-evaluator (ind1)
   "Evaluates an individual, which must be a boolean-vector, and returns
 its fitness."
-
-    ;;; IMPLEMENT ME
+	(max-ones ind1)
 )
 
 
@@ -276,7 +298,7 @@ its fitness."
 	:creator #'boolean-vector-creator
 	:selector #'tournament-selector
 	:modifier #'boolean-vector-modifier
-        :evaluator #'boolean-vector-evaluator
+  :evaluator #'boolean-vector-evaluator
 	:printer #'simple-printer)
 |#
 
@@ -917,4 +939,16 @@ more pellets, higher (better) fitness."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;; Test Code for boolean-vector-creator
-(print (boolean-vector-creator))
+(defun vec-test ()
+	(let ((vec-1 (boolean-vector-creator))
+				(vec-2 (boolean-vector-creator)))
+		(dprint vec-1 "Vector 1")
+		(dprint (boolean-vector-evaluator vec-1) "Fitness 1")
+		(dprint vec-2 "vector 2")
+		(dprint (boolean-vector-evaluator vec-2) "Fitness 2")
+
+		(dprint (boolean-vector-modifier vec-1 vec-2) "Modified ")
+	)
+)
+
+(vec-test)

@@ -127,16 +127,17 @@ new slot is created).  EQUALP is the test used for duplicates."
 (defparameter *tournament-size* 7)
 
 (defun tournament-select-one (population fitnesses)
-  "Does one tournament selection and returns the selected individual."
-
-;;	(let ((index (random-integer (length population)))
-;;				(best-ind (aref population index))
-;;				(best-fit (aref fitnesses index)))
-;;		(return (
-;;	) 
+  "Does one tournament selection and returns the selected individual. Algorithm 32."
+	(let ((numbers ())
+				(best-idx 0))
+		(dotimes (p (1- *tournamnet-size*)) (setf numbers (append numbers (list (random (length population))))))
+		(setf best-idx (random (length population)))
+		(dolist (next-idx numbers)
+			(if (> (svref fitnesses next-idx) (svref fitnesses best-idx))
+				(setf best-idx next-idx)))
+		(svref population best-idx)
+	)
 )
-
-
 
 (defun tournament-selector (num population fitnesses)
   "Does NUM tournament selections, and puts them all in a list"
@@ -184,26 +185,31 @@ POP-SIZE, using various functions"
   ;; your function should call PRINTER each generation, and also print out or the
   ;; best individual discovered over the whole run at the end, plus its fitness
   ;; and any other statistics you think might be nifty.
-
-    ;;; IMPLEMENT ME
-
-  )
-
-
-
-
-
-
+	
+	(let (population ind)
+		(dotimes (p pop-size)
+			(setf population (append population (funcall creator))))
+		;;(dotimes (x generations))	
+		(dprint (dotimes (x (length population))
+			(format t "~%~A  ~A" x (nth x population))) "Test Output")
+	)
 
 
+)
 
+	;;; an example way to fire up the GA.  It should easily discover
+	;;; ;;; a 100% correct solution.
+	;;; #|
+	;;; (evolve 50 100
+	;;;   :setup #'boolean-vector-sum-setup
+	;;;   :creator #'boolean-vector-creator
+	;;;   :selector #'tournament-selector
+	;;;   :modifier #'boolean-vector-modifier
+	;;;   :evaluator #'boolean-vector-evaluator
+	;;;   :printer #'simple-printer)
+	;;; |#
 
 ;;;;;; BOOLEAN VECTOR GENETIC ALGORTITHM
-
-
-
-
-
 
 ;;; Creator, Modifier, Evaluator, and Setup functions for the
 ;;; boolean vectors Problem.  Assume that you are evolving a bit vector
@@ -228,18 +234,18 @@ POP-SIZE, using various functions"
 
 (defun max-ones (vec)
 	"The total number of ones in the vector vec."
-	(values (reduce #'+ vec)))
+	(values  (reduce #'+ vec)))
 
 (defun leading-ones (vec)
 	"Counts the number of ones in your vector,
-	starting at the beginning, until a zero is encountered."
+	startin g at the beginning, until a zero is encountered."
 	(dotimes (x (length vec))
 		(if (equal (svref vec x) 0)
 			(return x))))
 
 (defun boolean-vector-creator ()
-  "Creates a boolean-vector *boolean-vector-length* in size, filled with
-random Ts and NILs, or with random 1s and 0s, your option.i
+  "      Creates a boolean-vector *boolean-vector-length* in size, filled with
+random Ts and NILs, or with random 1s and 0s, your option.
 (Algorithm 21.)"
 	(let ((vec (make-array *boolean-vector-length* :initial-element nil)))
 		(dotimes (x *boolean-vector-length*)
@@ -247,7 +253,7 @@ random Ts and NILs, or with random 1s and 0s, your option.i
 				(setf (svref vec x) 0)
 				(setf (svref vec x) 1)
 			)
-		)	vec)
+		)(list vec))
 )
 
 (defparameter *boolean-crossover-probability* 0.2)
@@ -270,10 +276,11 @@ given allele in a child will mutate.  Mutation simply flips the bit of the allel
 				(setf (svref ind1 x) 0)))
 		(if (< (random 1.0) *boolean-mutation-probability*)
 			(if (eql (svref ind2 (dprint x "mutate 2")) 1)
-			  (setf (svref ind2 x) 0)
-			  (setf (svref ind2 x) 0)))
-
-	) (list ind1 ind2)
+		  	(setf (svref ind2 x) 0)
+		  	(setf (svref ind2 x) 0)))
+	)
+	(dprint "End of modifier")
+	(list ind1 ind2)
 )
 
 (defun boolean-vector-evaluator (ind1)
@@ -281,7 +288,6 @@ given allele in a child will mutate.  Mutation simply flips the bit of the allel
 its fitness."
 	(max-ones ind1)
 )
-
 
 
 (defun boolean-vector-sum-setup ()
@@ -292,15 +298,15 @@ its fitness."
 
 ;;; an example way to fire up the GA.  It should easily discover
 ;;; a 100% correct solution.
-#|
-(evolve 50 100
- 	:setup #'boolean-vector-sum-setup
-	:creator #'boolean-vector-creator
-	:selector #'tournament-selector
-	:modifier #'boolean-vector-modifier
-  :evaluator #'boolean-vector-evaluator
-	:printer #'simple-printer)
-|#
+;;;#|
+;;;(evolve 50 100
+;;; 	:setup #'boolean-vector-sum-setup
+;;;	:creator #'boolean-vector-creator
+;;;	:selector #'tournament-selector
+;;;	:modifier #'boolean-vector-modifier
+;;;  :evaluator #'boolean-vector-evaluator
+;;;	:printer #'simple-printer)
+;;;|#
 
 
 
@@ -336,7 +342,7 @@ its fitness."
 
 ;;; I have defined the minimum and maximum gene values for rastrigin
 ;;; as [-5.12, 5.12].  Other problems have other traditional min/max
-;;; values, consult Section 11.2.2.
+;; ; values, consult Section 11.2.2.
 
 
 
@@ -399,7 +405,7 @@ and the floating-point ranges involved, etc.  I dunno."
 	:creator #'float-vector-creator
 	:selector #'tournament-selector
 	:modifier #'float-vector-modifier
-        :evaluator #'float-vector-sum-evaluator
+  :evaluator #'float-vector-sum-evaluator
 	:printer #'simple-printer)
 |#
 
@@ -669,7 +675,7 @@ returning most-positive-fixnum as the output of that expression."
 	:creator #'gp-creator
 	:selector #'tournament-selector
 	:modifier #'gp-modifier
-        :evaluator #'gp-symbolic-regression-evaluator
+  :evaluator #'gp-symbolic-regression-evaluator
 	:printer #'simple-printer)
 |#
 
@@ -932,7 +938,7 @@ more pellets, higher (better) fitness."
 	:creator #'gp-creator
 	:selector #'tournament-selector
 	:modifier #'gp-modifier
-        :evaluator #'gp-artificial-ant-evaluator
+  :evaluator #'gp-artificial-ant-evaluator
 	:printer #'simple-printer)
 |#
 
@@ -941,14 +947,25 @@ more pellets, higher (better) fitness."
 ;;; Test Code for boolean-vector-creator
 (defun vec-test ()
 	(let ((vec-1 (boolean-vector-creator))
-				(vec-2 (boolean-vector-creator)))
+				(vec-2 (boolean-vector-creator))
+				(new-vec ()))
 		(dprint vec-1 "Vector 1")
 		(dprint (boolean-vector-evaluator vec-1) "Fitness 1")
 		(dprint vec-2 "vector 2")
 		(dprint (boolean-vector-evaluator vec-2) "Fitness 2")
-
-		(dprint (boolean-vector-modifier vec-1 vec-2) "Modified ")
+		(setf new-vec (boolean-vector-modifier vec-1 vec-2))
+		new-vec
+;;;		(dprint new-vec "Modified ")
 	)
 )
 
-(vec-test)
+;;;(vec-test)
+;;;
+(evolve 50 100
+ :setup #'boolean-vector-sum-setup
+ :creator #'boolean-vector-creator
+ :selector #'tournament-selector
+ :modifier #'boolean-vector-modifier
+ :evaluator #'boolean-vector-evaluator
+ :printer #'simple-printer)
+

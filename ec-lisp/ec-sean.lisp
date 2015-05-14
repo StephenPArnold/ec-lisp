@@ -130,20 +130,22 @@ new slot is created).  EQUALP is the test used for duplicates."
   "Does one tournament selection and returns the selected individual. Algorithm 32."
 	(let ((numbers ())
 				(best-idx 0))
-		(dotimes (p (1- *tournamnet-size*)) (setf numbers (append numbers (list (random (length population))))))
+		(dotimes (p (1- *tournament-size*)) (setf numbers (append numbers (list (random (length population))))))
 		(setf best-idx (random (length population)))
 		(dolist (next-idx numbers)
-			(if (> (svref fitnesses next-idx) (svref fitnesses best-idx))
+			(if (> (nth next-idx fitnesses) (nth best-idx fitnesses))
 				(setf best-idx next-idx)))
-		(svref population best-idx)
+		(nth best-idx population)
 	)
 )
 
 (defun tournament-selector (num population fitnesses)
   "Does NUM tournament selections, and puts them all in a list"
-
-	(
-  )
+	(let (chosen)
+		(dotimes (x num)
+			(setf chosen (append chosen (list (tournament-select-one population fitnesses))))
+		)
+	)
 )
 
 (defun simple-printer (pop fitnesses)  ;; I'm nice and am providing this for you.  :-)
@@ -186,15 +188,24 @@ POP-SIZE, using various functions"
   ;; best individual discovered over the whole run at the end, plus its fitness
   ;; and any other statistics you think might be nifty.
 	
-	(let (population ind)
+	(let ((population ())
+				(fitnesses ()) ;;(make-array *boolean-vector-length* :initial-element 0))
+				(ind ()))
 		(dotimes (p pop-size)
 			(setf population (append population (funcall creator))))
-		;;(dotimes (x generations))	
-		(dprint (dotimes (x (length population))
-			(format t "~%~A  ~A" x (nth x population))) "Test Output")
+		(dprint population "Population: ")
+		(dotimes (ind (length population))
+			(setf fitnesses (append fitnesses (list (funcall evaluator (nth ind population))))))
+		(dprint fitnesses "Fitnesses: ")
+		(dotimes (x generations)
+			(print x)
+			(setf population (funcall selector (length population) population fitnesses)))
+;;;		(dotimes (ind (length population))
+;;;			(setf (svref fitnesses ind) (funcall evaluator (svref population ind))))
+		(funcall printer population fitnesses) ;;(coerce fitnesses 'list))
+		;;(dprint (dotimes (x (length population))
+		;;	(format t "~%~A  ~A" x (nth x population))) "Test Output")
 	)
-
-
 )
 
 	;;; an example way to fire up the GA.  It should easily discover

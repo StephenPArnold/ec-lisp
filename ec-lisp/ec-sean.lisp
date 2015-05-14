@@ -470,58 +470,46 @@ Error generated if the queue is empty."
     (swap (elt queue index) (elt queue (1- (length queue))))
     (vector-pop queue)))
 
-(defun ptc2 (size)
-  "If size=1, just returns a random terminal.  Else builds and
-returns a tree by repeatedly extending the tree horizon with
-nonterminals until the total number of nonterminals in the tree,
-plus the number of unfilled slots in the horizon, is >= size.
-Then fills the remaining slots in the horizon with terminals.
-Terminals like X should be added to the tree
-in function form (X) rather than just X."
+(defun ptc2(size)
+	(let ((temp-cell (copy-list '())) (list-of-cells (copy-list '((2)))) (current-nonterminal (copy-list '())) (new-thing (copy-list '(()))) (begining-of-list (copy-list '())))
+		(setf begining-of-list new-thing)
+		(dotimes (n (- size 1))
 
-  #|
-  The simple version of PTC2 you will implement is as follows:
+			(setf current-nonterminal (get-random-element *nonterminal-set*))
+			(dprint "wat, nonterminal is" current-nonterminal)
+			(setf  (first new-thing) (list (first current-nonterminal)))
+			(dotimes (x (first (last current-nonterminal)))
+				(dprint "x is " x)
+				(setf temp-cell (copy-list '()))
+					
+					
+				(push (copy-list '()) temp-cell)
+				(setf (cdr (last list-of-cells)) (list temp-cell))	
+				(setf (cdr (last (first new-thing))) temp-cell)
+				
+			)
+		
+			(dprint "list of cells" list-of-cells)
+			(dprint "first of newthing" (first new-thing))
+		
+			(setf new-thing (get-random-nil-element list-of-cells))
+			;;(setf (first new-thing) (random 400))
+			
+			(dprint "HEY new-thing"  new-thing)
+			;;(setf new-thing (first list-of-cells))
+			(dprint begining-of-list "begining of list")
+		)
+		(loop for x in list-of-cells do
+			(if (equal (first x) nil) (setf (first x) (list (get-random-element *terminal-set*)))))
+		(print "")
+		(print "")
+		(print "")
+		(print "")
+		(print "")
+		(first begining-of-list)
+	)
+)
 
-  PTC2(size):
-  if size = 1, return a random terminal
-  else
-     q <- make-queue
-     root <- random nonterminal
-     count <- 1
-     enqueue into q each child argument slot of root
-     Loop until count + size_of_q >= size
-        remove a random argument slot s from q
-        a <- random nonterminal
-        count <- count + 1
-        fill the slot s with a
-        enqueue into q each child argument slot of a
-     Loop until size_of_q = 0
-        remove a random argument slot s from q
-        a <- random terminal
-        fill the slot s with a
-     return root
-
-
-  Note that "terminals" will all be considered to be
-  zero-argument functions.  Thus PTC might generate the
-  s-expression tree:
-
-  (cos (+ (x) (- (x) (x)) (sin (x))))
-
-  but it should NOT generate the tree:
-
-  (cos (+ x (- x x) (sin x)))
-
-
-  Note that this has some gotchas: the big gotcha is that you have to keep track of
-  argument slots in lisp s-expressions, and not just pointers to the values presently
-  in those slots.  If you are totally lost as to how to implement that, I can provide
-  some hints, but you should try to figure it out on your own if you can.
-  |#
-
-  ;;; IMPLEMENT ME
-
-  )
 
 
 (defparameter *size-limit* 20)

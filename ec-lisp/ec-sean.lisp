@@ -150,7 +150,7 @@ new slot is created).  EQUALP is the test used for duplicates."
 		;;(dprint fitnesses "Fitnesses: ")
 		(dotimes (w num)
 			(setf chosen (append chosen (list (tournament-select-one population fitnesses)))))
-	(dprint chosen "Chosen :")
+		chosen
 	)
 )
 
@@ -213,16 +213,16 @@ POP-SIZE, using various functions"
 				;;(dprint fitnesses "fitness:")
 				(if (or (eql best nil) (> (elt (last fitnesses) 0) (funcall evaluator (nth best population))))
 					(setf best ind)))
+			(dprint (nth best fitnesses) "best:")
 			(setf q ())
 			(let ((ind1 ())
 						(ind2 ()))
 				(dotimes (x (/ (length population) 2))
-					(dprint x "Loop :")
-					(dprint (setf ind1 (funcall selector 1 population fitnesses)) "ind1:")
-					(dprint (setf ind2 (funcall selector 1 population fitnesses)) "ind2 :")
+					;;(dprint x "Loop :")
+					(setf ind1 (first (funcall selector 1 population fitnesses)))
+					(setf ind2 (first (funcall selector 1 population fitnesses)))
 					(setf q (append q (funcall modifier ind1 ind2)))))
 			(setf population q)
-			(dprint best "best:")
 			(setf cycles (1+ cycles))
 		while (or (< cycles generations) (eql (funcall evaluator (nth best population)) ideal)))
 		
@@ -302,7 +302,10 @@ then mutates the children.  *crossover-probability* is the probability that any
 given allele will crossover.  *mutation-probability* is the probability that any
 given allele in a child will mutate.  Mutation simply flips the bit of the allele.
 (Algorithms 22 & 25.)"
+	(dprint ind1 "ind1:")
+	(dprint ind2 "ind2:")
 	(dotimes (x (length ind1))
+		;;(dprint x "Entering modifier step: ")
 		(if (< (random 1.0) *boolean-crossover-probability*)
 			(swap (svref ind1 x) (svref ind2 x))
 		)
@@ -317,6 +320,9 @@ given allele in a child will mutate.  Mutation simply flips the bit of the allel
 		  	(setf (svref ind2 x) 0)))
 	)
 	(dprint "End of modifier")
+	(dprint ind1 "ind1:")
+	(dprint ind2 "ind2:")
+	
 	(list ind1 ind2)
 )
 

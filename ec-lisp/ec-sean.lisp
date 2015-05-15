@@ -130,6 +130,7 @@ new slot is created).  EQUALP is the test used for duplicates."
   "Does one tournament selection and returns the selected individual. Algorithm 32."
 	(let ((numbers ())
 				(best-idx 0))
+		;;(dprint fitnesses "TSO: ")
 		(dotimes (p (1- *tournament-size*)) (setf numbers (append numbers (list (random (length population))))))
 		;;(dprint numbers "Numbers: ")
 		(setf best-idx (random (length population)))
@@ -144,9 +145,9 @@ new slot is created).  EQUALP is the test used for duplicates."
 (defun tournament-selector (num population fitnesses)
   "Does NUM tournament selections, and puts them all in a list"
 	(let (chosen)
-		(dprint num "Generations: ")
-		(dprint population "Population: ")
-		(dprint fitnesses "Fitnesses: ")
+		;;(dprint num "Generations: ")
+		;;(dprint population "Population: ")
+		;;(dprint fitnesses "Fitnesses: ")
 		(dotimes (w num)
 			(setf chosen (append chosen (list (tournament-select-one population fitnesses)))))
 	(dprint chosen "Chosen :")
@@ -207,16 +208,20 @@ POP-SIZE, using various functions"
 		(loop do
 			(setf fitnesses ())
 			(dotimes (ind (length population))
-				(dprint ind "index")
+				;;(dprint ind "index")
 				(setf fitnesses (append fitnesses (list (funcall evaluator (nth ind population)))))
-				(dprint fitnesses "fitness:")
+				;;(dprint fitnesses "fitness:")
 				(if (or (eql best nil) (> (elt (last fitnesses) 0) (funcall evaluator (nth best population))))
-					(setf best ind))
-				(setf q ())
+					(setf best ind)))
+			(setf q ())
+			(let ((ind1 ())
+						(ind2 ()))
 				(dotimes (x (/ (length population) 2))
-					(setf q (append q (funcall modifier (funcall selector 1 population fitnesses) (funcall selector 1 population fitnesses)))))
-				(setf p q)
-			)
+					(dprint x "Loop :")
+					(dprint (setf ind1 (funcall selector 1 population fitnesses)) "ind1:")
+					(dprint (setf ind2 (funcall selector 1 population fitnesses)) "ind2 :")
+					(setf q (append q (funcall modifier ind1 ind2)))))
+			(setf population q)
 			(dprint best "best:")
 			(setf cycles (1+ cycles))
 		while (or (< cycles generations) (eql (funcall evaluator (nth best population)) ideal)))
@@ -981,6 +986,7 @@ more pellets, higher (better) fitness."
 
 ;;;(vec-test)
 ;;;
+(defun e-test ()
 (evolve 50 100
  :setup #'boolean-vector-sum-setup
  :creator #'boolean-vector-creator
@@ -988,4 +994,5 @@ more pellets, higher (better) fitness."
  :modifier #'boolean-vector-modifier
  :evaluator #'boolean-vector-evaluator
  :printer #'simple-printer)
+)
 

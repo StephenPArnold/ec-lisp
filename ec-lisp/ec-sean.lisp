@@ -319,9 +319,9 @@ given allele in a child will mutate.  Mutation simply flips the bit of the allel
 		)
 ;;; These don't feel very "lispy"		
 		(if (< (random 1.0) *boolean-mutation-probability*)
-			(if (eql (svref ind1 x) 1)
+			(progn (print "this actually happens") (if (eql (svref ind1 x) 1)
 				(setf (svref ind1 x) 0)
-				(setf (svref ind1 x) 1)))
+				(setf (svref ind1 x) 1))))
 		(if (< (random 1.0) *boolean-mutation-probability*)
 			(if (eql (svref ind2 x) 1)
 		  	(setf (svref ind2 x) 0)
@@ -696,13 +696,13 @@ If n is bigger than the number of nodes in the tree
 	(let (  (first-index 0)
 		(new-tree (ptc2 (+ (random *mutation-size-limit*) 1)))
 		(subtree1 (nth-subtree-parent ind1 (random (- (num-nodes ind1) 1)))))
-		(print "hi1")
-		(print "nth-subtree returned")
-		(print subtree1)
+		;;(print "hi1")
+		;;(print "nth-subtree returned")
+		;;(print subtree1)
 		(setf first-index (+ (second subtree1) 1))
-		(print "hi2")
+		;;(print "hi2")
 		(setf (nth first-index (first subtree1)) new-tree) 
-		(print "hi3")
+		;;(print "hi3")
 		ind1			
 	)
 )
@@ -802,7 +802,11 @@ returning most-positive-fixnum as the output of that expression."
   ;;;  (error (condition)
   ;;;     (format t "~%Warning, ~a" condition) most-positive-fixnum))
 
-
+	
+	(handler-case
+  		
+	(error (condition)
+            (format t "~%Warning, ~a" condition) most-positive-fixnum))
   ;;; IMPLEMENT ME
 
   )
@@ -1102,7 +1106,15 @@ more pellets, higher (better) fitness."
 ;;;(vec-test)
 ;;;
 (defun e-test ()
-  (evolve 10 10
+  	;;; (evolve 50 100
+	;;;   :setup #'boolean-vector-sum-setup
+	;;;   :creator #'boolean-vector-creator
+	;;;   :selector #'tournament-selector
+	;;;   :modifier #'boolean-vector-modifier
+	;;;   :evaluator #'boolean-vector-evaluator
+	;;;   :printer #'simple-printer)
+	;;;
+  (evolve 50 100
 ;;(setf *debug* nil)
  :setup #'boolean-vector-sum-setup
  :creator #'boolean-vector-creator
@@ -1158,9 +1170,12 @@ more pellets, higher (better) fitness."
 		(print "modified:")
 		(print (modify-tree *random-tree*))
 ))
-(ptc2-test)
-(num-nodes-test)
-(test-subtree)
-(crossover-test)
-(modify-tree-test)
-(print "hey i finished at least")
+
+(setf *debug* t)
+(e-test)
+;;(ptc2-test)
+;;(num-nodes-test)
+;;(test-subtree)
+;;(crossover-test)
+;;(modify-tree-test)
+;;(print "hey i finished at least")

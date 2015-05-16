@@ -652,6 +652,38 @@ If n is bigger than the number of nodes in the tree
 
 
 (defparameter *mutation-size-limit* 10)
+(defun crossover-gp (ind1 ind2)
+	(dprint "hello world")
+	(dprint (num-nodes ind1))
+	(dprint (num-nodes ind2))
+	(let (  (first-index 0)
+		(second-index 0)
+		(new-tree1 '())
+		(new-tree2 '())
+		(subtree1 (nth-subtree-parent ind1 (random (- (num-nodes ind1) 1)))) 
+		(subtree2 (nth-subtree-parent ind2 (random (- (num-nodes ind2) 1)))))
+		
+		(setf first-index (+ (second subtree1) 1))
+		(setf second-index (+ (second subtree2) 1))
+
+		(dprint subtree1)
+		(dprint subtree2)
+		(dprint (first subtree1))
+		(dprint (first subtree2))
+		(dprint "first setf")
+		(setf new-tree1 (copy-tree (nth first-index (first subtree1))))
+		(dprint "second setf")
+		(setf new-tree2 (copy-tree (nth second-index (first subtree2))))
+		(dprint "third setf") 
+		(setf (nth first-index (first subtree1)) new-tree2) 
+		(dprint "fourth setf")
+		(dprint "subtree 2 is ")
+		(dprint subtree2)
+		(setf (nth second-index (first subtree2)) new-tree1) 
+		(dprint "done")
+		(list ind1 ind2)
+	) 
+)
 (defun gp-modifier (ind1 ind2)
   "Flips a coin.  If it's heads, then ind1 and ind2 are
 crossed over using subtree crossover.  If it's tails, then
@@ -659,7 +691,12 @@ ind1 and ind2 are each mutated using subtree mutation, where
 the size of the newly-generated subtrees is pickedc at random
 from 1 to 10 inclusive.  Doesn't damage ind1 or ind2.  Returns
 the two modified versions as a list."
-	
+	(setf ind1 (copy-tree ind1))
+	(setf ind2 (copy-tree ind2))
+	(if (= (random 2) 0)
+		(crossover-gp ind1 ind2)
+		(list (modify-tree ind1) (modify-tree ind2))
+	)	
     ;;; IMPLEMENT ME
 )
 
@@ -1076,7 +1113,16 @@ more pellets, higher (better) fitness."
 	(dotimes (my-x 12) 
              (print (nth-subtree-parent '(a (b c) (d e (f (g h i j)) k)) my-x ))))
 ) 
+(defun crossover-test ()
+	(dotimes (blah 10)
+		(print "origional:")
+		(print '(1 (2 (5 (6 7)))))
+		(print '(a b c (d e (f g h))))
+		(print (crossover-gp (copy-tree '(1 (2 (5 (6 7))))) (copy-tree '(a b c (d e (f g h)))))))
+	
+)
 (ptc2-test)
 (num-nodes-test)
 (test-subtree)
+(crossover-test)
 (print "hey i finished at least")

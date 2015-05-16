@@ -1,4 +1,6 @@
 ;;; Project 4: Build a simple evolutionary computation system.
+(setf *random-state* (make-random-state t))
+
 
 ;;; This is a nontrivial project to start with.  Do not discuss
 ;;; programming issues related to this project with other groups.
@@ -73,7 +75,7 @@ Information on compiling code and doing compiler optimizations can be found in t
 
 
 ;;; Useful Functions and Macros
-(defparameter *debug* t)
+(defparameter *debug* nil)
 
 (defun dprint (some-variable &optional (additional-message '()))
 	"Debug Print - useful for allowing error/status messages
@@ -210,7 +212,7 @@ POP-SIZE, using various functions"
 			(dotimes (ind (length population))
 				;;(dprint ind "index")
 				(setf fitnesses (append fitnesses (list (funcall evaluator (nth ind population)))))
-				;;(dprint fitnesses "fitness:")
+				;;(dprint fitnesses "fitnesses:")
 				(if (or (eql best nil) (> (elt (last fitnesses) 0) (funcall evaluator (nth best population))))
 					(setf best ind)))
 			(dprint (nth best fitnesses) "best:")
@@ -502,8 +504,24 @@ Error generated if the queue is empty."
     (swap (elt queue index) (elt queue (1- (length queue))))
     (vector-pop queue)))
 
+(defun get-random-element (some-list)
+	(nth (random (length some-list)) some-list)	
+)
+(defun get-random-nil-element (some-list)
+	(let ((value '(t)))
+		(loop while (not (equal (first value)  nil)) do
+			(setf value (get-random-element some-list))
+		)
+	value
+	)
+)
+
 (defun ptc2(size)
+	(if (= size 1) (get-random-element *terminal-set*) 
 	(let ((temp-cell (copy-list '())) (list-of-cells (copy-list '((2)))) (current-nonterminal (copy-list '())) (new-thing (copy-list '(()))) (begining-of-list (copy-list '())))
+		;; new-thing is terribly named as i wasnt in the best mood, will change before turnin
+		;;it's the current cell we're modifying out of the list of cells. at first there's just a single empty cell 
+		;;a "cell" is a place to put an argument
 		(setf begining-of-list new-thing)
 		(dotimes (n (- size 1))
 
@@ -514,7 +532,7 @@ Error generated if the queue is empty."
 				(dprint "x is " x)
 				(setf temp-cell (copy-list '()))
 					
-					
+				;;the hardest step, figureing out how to add this thing to the end of the darn linked list without screwing things up
 				(push (copy-list '()) temp-cell)
 				(setf (cdr (last list-of-cells)) (list temp-cell))	
 				(setf (cdr (last (first new-thing))) temp-cell)
@@ -533,13 +551,8 @@ Error generated if the queue is empty."
 		)
 		(loop for x in list-of-cells do
 			(if (equal (first x) nil) (setf (first x) (list (get-random-element *terminal-set*)))))
-		(print "")
-		(print "")
-		(print "")
-		(print "")
-		(print "")
 		(first begining-of-list)
-	)
+	))
 )
 
 
@@ -548,9 +561,7 @@ Error generated if the queue is empty."
 (defun gp-creator ()
   "Picks a random number from 1 to 20, then uses ptc2 to create
 a tree of that size"
-
-    ;;; IMPLEMENT ME
-  )
+	(ptc2 (+ (random 20) 1)))
 
 
 
@@ -558,9 +569,13 @@ a tree of that size"
 
 (defun num-nodes (tree)
   "Returns the number of nodes in tree, including the root"
-
-    ;;; IMPLEMENT ME
-  )
+    (let ((sum 0));;nice simple recursive implementation for counting of nodes
+	(dotimes (n (length tree))
+    		(if (atom (nth n tree)) (incf sum)  (setf sum (+ sum (num-nodes (nth n tree)))))
+	)
+	sum;;return value	
+    )
+)
 
 
 (defun nth-subtree-parent (tree n)
@@ -595,7 +610,24 @@ If n is bigger than the number of nodes in the tree
   ;0 
   ;1 
   ;NIL
-
+	(print "hello")
+     (let ((sum 0) (k 0) (temp 0) (found '()) (parent '()));;nice simple recursive implementation for counting of nodes
+        (dotimes (my-n (length tree))
+                (setf k my-n)
+		(print "hello2")
+		(if (atom (nth my-n tree)) (progn (decf n) (if (= n -1) (return-from nth-subtree-parent (list tree (- my-n 1)))) ())   
+			(progn 
+				(print "hello3")
+				(if (= n 0) (return-from nth-subtree-parent (list (nth my-n tree) 0)))
+				(setf temp n)
+				(print "hello4")
+				(setf sum (+ sum (num-nodes (nth my-n tree))))
+				(if (> sum n) (return-from nth-subtree-parent (nth-subtree-parent (nth my-n tree) n)) ()) 
+				(print "hello5")
+			))
+        
+	)
+     )
     ;;; IMPLEMENT ME
 
   )
@@ -993,6 +1025,7 @@ more pellets, higher (better) fitness."
 ;;;(vec-test)
 ;;;
 (defun e-test ()
+(setf *debug* nil)
 (evolve 50 100
  :setup #'boolean-vector-sum-setup
  :creator #'boolean-vector-creator
@@ -1001,4 +1034,30 @@ more pellets, higher (better) fitness."
  :evaluator #'boolean-vector-evaluator
  :printer #'simple-printer)
 )
+(defun ptc2-test ()
+	(setf *terminal-set* '(x))
+	(setf *nonterminal-set* '((+ 2) (- 2) (* 2) (% 2) (sin 1) (cos 1) (exp 1)))
+ 
 
+	(print "here's (ptc2 1)")
+	(print (ptc2 1))
+	(print "here's (ptc2 10)")
+	(print (ptc2 10))
+
+)
+(defun num-nodes-test ()
+	(setf expression (ptc2 10))
+	(print "expression:")
+	(print expression)
+	(print "num nodes is:")
+	(print (num-nodes expression))
+)
+(defun fuck-you ()
+      (let ((my-x 0))
+	(dotimes (my-x 12) 
+             (print (nth-subtree-parent '(a (b c) (d e (f (g h i j)) k)) my-x ))))
+) 
+(ptc2-test)
+(num-nodes-test)
+(fuck-you)
+(print "hey i finished at least")

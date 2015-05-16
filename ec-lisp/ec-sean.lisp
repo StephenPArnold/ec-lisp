@@ -195,12 +195,14 @@ POP-SIZE, using various functions"
   ;; your function should call PRINTER each generation, and also print out or the
   ;; best individual discovered over the whole run at the end, plus its fitness
   ;; and any other statistics you think might be nifty.
-	
+
+;;; DAVID - could the variable declarations (below) go into the unused function "boolean-vector-sum-setup"? 
 	(let ((population ())
 				(fitnesses ()) ;; Might be able to use a lambda function to "create" fitnesses on the fly.
 				(ind ())
-				(best ())
-				(best-list ())
+				(best ()) ;; an index into the population
+				(best-ind ()) ;; the best individual of the population
+				(best-list ()) ;; a list of the best fitnesses
 				(cycles 0)
 				(ideal 100))
 ;;; Create initial population
@@ -217,10 +219,14 @@ POP-SIZE, using various functions"
 				;;(dprint fit "fitness:")
 				(if (or (eql best nil) (> fit (funcall evaluator (nth best population))))
 					(setf best ind)))
+			(setf best-ind (nth best population))
+			(setf fit (funcall evaluator best-ind))
 			(dprint fitnesses "Fitnesses: ")
 			(dprint (nth best fitnesses) "best:")
 			(setf best-list (append best-list (list (nth best fitnesses))))
 			(setf q ())
+
+;;; DAVID - do you think we can get rid of this "let" statement?
 			(let ((ind1 ())
 						(ind2 ()))
 				(dotimes (x (/ (length population) 2))
@@ -231,14 +237,20 @@ POP-SIZE, using various functions"
 			(setf population q)
 			(dprint population "New Population: ")
 			(setf cycles (1+ cycles))
-		while (or (< cycles generations) (eql (funcall evaluator (nth best population)) ideal)))
-		
-;;;		(dotimes (ind (length population))
-;;;			(setf (svref fitnesses ind) (funcall evaluator (svref population ind))))
-		(funcall printer population fitnesses) ;;(coerce fitnesses 'list))
-		(print best-list)
-		;;(dprint (dotimes (x (length population))
-		;;	(format t "~%~A  ~A" x (nth x population))) "Test Output")
+;;; DAVID - not sure how I feel about the last part of the following line ... I wonder
+;;; 				if there is a better way to check for 'fit' equating to ideal?
+		while (or (> cycles generations) (/= fit ideal)))
+;;; DAVID - the repeated portion of Algo 20 (The GA Algo) has two (repeated) parts: looking for
+;;; 				the best fit and crossover/mutation. My concern is that this function might not be
+;;; 				"generic" enough. I use BEST as an index into the population, but after we mutate,
+;;; 				the index is kind of useless as it might point to an element which was just modified
+;;; 				(and is no longer the "best" solution. To mitigate against that, I saved off the best
+;;; 				vector as BEST-IND .... but doing so may make this function less-than-generic.
+;;; 				Thoughts???
+;;;
+		(funcall printer population fitnesses) ;; problem: prints cycle AFTER best discovered
+		(print best-ind)
+		best-list
 	)
 )
 
@@ -289,7 +301,7 @@ POP-SIZE, using various functions"
 			(return x))))
 
 (defun boolean-vector-creator ()
-  "      Creates a boolean-vector *boolean-vector-length* in size, filled with
+  "Creates a boolean-vector *boolean-vector-length* in size, filled with
 random Ts and NILs, or with random 1s and 0s, your option.
 (Algorithm 21.)"
 	(let ((vec (make-array *boolean-vector-length* :initial-element nil)))
@@ -312,26 +324,28 @@ given allele in a child will mutate.  Mutation simply flips the bit of the allel
 (Algorithms 22 & 25.)"
 	;;(dprint ind1 "ind1:")
 	;;(dprint ind2 "ind2:")
+	(let ((off1 (copy-seq ind1))
+				(off2 (copy-seq ind2)))
 	(dotimes (x (length ind1))
 		;;(dprint x "Entering modifier step: ")
 		(if (< (random 1.0) *boolean-crossover-probability*)
-			(swap (svref ind1 x) (svref ind2 x))
+			(swap (svref off1 x) (svref off2 x))
 		)
 ;;; These don't feel very "lispy"		
 		(if (< (random 1.0) *boolean-mutation-probability*)
-			(if (eql (svref ind1 x) 1)
-				(setf (svref ind1 x) 0)
-				(setf (svref ind1 x) 1)))
+			(if (eql (svref off1 x) 1)
+				(setf (svref off1 x) 0)
+				(setf (svref off1 x) 1)))
 		(if (< (random 1.0) *boolean-mutation-probability*)
-			(if (eql (svref ind2 x) 1)
-		  	(setf (svref ind2 x) 0)
-		  	(setf (svref ind2 x) 1)))
+			(if (eql (svref off2 x) 1)
+		  	(setf (svref off2 x) 0)
+		  	(setf (svref off2 x) 1)))
 	)
 	;;(dprint "End of modifier")
 	;;(dprint ind1 "ind1:")
 	;;(dprint ind2 "ind2:")
 	
-	(list ind1 ind2)
+	(list off1 off2))
 )
 
 (defun boolean-vector-evaluator (ind1)
@@ -339,7 +353,6 @@ given allele in a child will mutate.  Mutation simply flips the bit of the allel
 its fitness."
 	(max-ones ind1)
 )
-
 
 (defun boolean-vector-sum-setup ()
   "Does nothing.  Perhaps you might use this to set up various
@@ -360,15 +373,7 @@ its fitness."
 ;;;|#
 
 
-
-
-
-
-
 ;;;;;; FLOATING-POINT VECTOR GENETIC ALGORTITHM
-
-
-
 
 ;;; Creator, Modifier, Evaluator, and Setup functions for the
 ;;; GA Max-ONES Problem.  Assume that you are evolving a vector
@@ -399,7 +404,7 @@ its fitness."
 
 (defparameter *float-vector-length* 100)
 
-(defparameter *float-problem :rastrigin)
+(defparameter *float-problem* :rastrigin)
 (defparameter *float-min* -5.12)  ;; these will change based on the problem
 (defparameter *float-max* 5.12)   ;; likewise
 
@@ -1102,8 +1107,8 @@ more pellets, higher (better) fitness."
 ;;;(vec-test)
 ;;;
 (defun e-test ()
-(setf *debug* t)
-  (evolve 10 10
+(setf *debug* nil)
+  (evolve 50 100
  :setup #'boolean-vector-sum-setup
  :creator #'boolean-vector-creator
  :selector #'tournament-selector

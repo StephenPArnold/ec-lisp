@@ -610,22 +610,40 @@ If n is bigger than the number of nodes in the tree
   ;0 
   ;1 
   ;NIL
-	(print "hello")
-     (let ((sum 0) (k 0) (temp 0) (found '()) (parent '()));;nice simple recursive implementation for counting of nodes
+;;	(print "recursive call on")
+;;	(print n)
+	
+	
+	;;NOTE: not everything here has a purpose, and there are some really stupid looking !@#$ going on. 
+	;;this is a result of me changing the algorithm to solve this as i was debugging it
+	;;There are left over variables for trying to make ideas for how to actually 
+	;;solve this problem i'll clean it up when we have overhead to do so.
+	;;inspired off of num-nodes, and uses num nodes. 
+	;; will only do a recursive call iff that subtree is big enough that it MUST have the desired subtree in it
+    (if (>= (+ n 1) (num-nodes tree)) (return-from nth-subtree-parent (+ (- n (num-nodes tree)) 1 ))) 
+    (let ((sum 0) (k 0) (temp 0) (found '()) (parent '()));;nice simple recursive implementation for counting of nodes
         (dotimes (my-n (length tree))
                 (setf k my-n)
-		(print "hello2")
-		(if (atom (nth my-n tree)) (progn (decf n) (if (= n -1) (return-from nth-subtree-parent (list tree (- my-n 1)))) ())   
+		(dprint "before first return")
+		(if (= n -1) (return-from nth-subtree-parent (list tree (- my-n 1) )))
+		(dprint "after first return")
+		(if (atom (nth my-n tree)) (progn (decf n) )   
 			(progn 
-				(print "hello3")
+				(dprint "before second return")
 				(if (= n 0) (return-from nth-subtree-parent (list (nth my-n tree) 0)))
+				(dprint "after second return")
 				(setf temp n)
-				(print "hello4")
 				(setf sum (+ sum (num-nodes (nth my-n tree))))
-				(if (> sum n) (return-from nth-subtree-parent (nth-subtree-parent (nth my-n tree) n)) ()) 
-				(print "hello5")
+				
+				(dprint sum)
+				(dprint n)
+				(dprint "before third return")
+				(if (> sum (+ n 1)) (return-from nth-subtree-parent (nth-subtree-parent (nth my-n tree) (+ n 0))) ()) 
+				(dprint "after third return")
+				(setf n (- n sum))
+				(setf sum 0)
 			))
-        
+		        
 	)
      )
     ;;; IMPLEMENT ME
@@ -1054,6 +1072,7 @@ more pellets, higher (better) fitness."
 )
 (defun fuck-you ()
       (let ((my-x 0))
+	
 	(dotimes (my-x 12) 
              (print (nth-subtree-parent '(a (b c) (d e (f (g h i j)) k)) my-x ))))
 ) 

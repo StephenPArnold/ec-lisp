@@ -130,14 +130,14 @@ new slot is created).  EQUALP is the test used for duplicates."
   "Does one tournament selection and returns the selected individual. Algorithm 32."
 	(let ((numbers ())
 				(best-idx 0))
-		;;(dprint fitnesses "TSO: ")
+		(dprint fitnesses "TSO: ")
 		(dotimes (p (1- *tournament-size*)) (setf numbers (append numbers (list (random (length population))))))
-		;;(dprint numbers "Numbers: ")
+		(dprint numbers "Numbers: ")
 		(setf best-idx (random (length population)))
 		(dolist (next-idx numbers)
 			(if (> (nth next-idx fitnesses) (nth best-idx fitnesses))
 				(setf best-idx next-idx)))
-		;;(dprint best-idx "Best-idx:")
+		(dprint best-idx "Best-idx:")
 		(nth best-idx population)
 	)
 )
@@ -150,7 +150,7 @@ new slot is created).  EQUALP is the test used for duplicates."
 		;;(dprint fitnesses "Fitnesses: ")
 		(dotimes (w num)
 			(setf chosen (append chosen (list (tournament-select-one population fitnesses)))))
-		chosen
+		(dprint chosen "Chosen :")
 	)
 )
 
@@ -198,22 +198,26 @@ POP-SIZE, using various functions"
 				(fitnesses ()) ;; Might be able to use a lambda function to "create" fitnesses on the fly.
 				(ind ())
 				(best ())
+				(best-list ())
 				(cycles 0)
 				(ideal 100))
 ;;; Create initial population
 		(dotimes (p pop-size)
 			(setf population (append population (funcall creator))))
-		(dprint population "Evolve Population: ")
+		(dprint population "Original Population: ")
 ;;; Genetic Algorithm Main Loop (Algorithm 20)		
 		(loop do
 			(setf fitnesses ())
 			(dotimes (ind (length population))
 				;;(dprint ind "index")
-				(setf fitnesses (append fitnesses (list (funcall evaluator (nth ind population)))))
-				;;(dprint fitnesses "fitness:")
-				(if (or (eql best nil) (> (elt (last fitnesses) 0) (funcall evaluator (nth best population))))
+				(setf fit (funcall evaluator (nth ind population)))
+				(setf fitnesses (append fitnesses (list fit)))
+				;;(dprint fit "fitness:")
+				(if (or (eql best nil) (> fit (funcall evaluator (nth best population))))
 					(setf best ind)))
+			(dprint fitnesses "Fitnesses: ")
 			(dprint (nth best fitnesses) "best:")
+			(setf best-list (append best-list (list (nth best fitnesses))))
 			(setf q ())
 			(let ((ind1 ())
 						(ind2 ()))
@@ -223,12 +227,14 @@ POP-SIZE, using various functions"
 					(setf ind2 (first (funcall selector 1 population fitnesses)))
 					(setf q (append q (funcall modifier ind1 ind2)))))
 			(setf population q)
+			(dprint population "New Population: ")
 			(setf cycles (1+ cycles))
 		while (or (< cycles generations) (eql (funcall evaluator (nth best population)) ideal)))
 		
 ;;;		(dotimes (ind (length population))
 ;;;			(setf (svref fitnesses ind) (funcall evaluator (svref population ind))))
 		(funcall printer population fitnesses) ;;(coerce fitnesses 'list))
+		(print best-list)
 		;;(dprint (dotimes (x (length population))
 		;;	(format t "~%~A  ~A" x (nth x population))) "Test Output")
 	)
@@ -302,8 +308,8 @@ then mutates the children.  *crossover-probability* is the probability that any
 given allele will crossover.  *mutation-probability* is the probability that any
 given allele in a child will mutate.  Mutation simply flips the bit of the allele.
 (Algorithms 22 & 25.)"
-	(dprint ind1 "ind1:")
-	(dprint ind2 "ind2:")
+	;;(dprint ind1 "ind1:")
+	;;(dprint ind2 "ind2:")
 	(dotimes (x (length ind1))
 		;;(dprint x "Entering modifier step: ")
 		(if (< (random 1.0) *boolean-crossover-probability*)
@@ -311,17 +317,17 @@ given allele in a child will mutate.  Mutation simply flips the bit of the allel
 		)
 ;;; These don't feel very "lispy"		
 		(if (< (random 1.0) *boolean-mutation-probability*)
-			(if (eql (svref ind1 (dprint x "mutate 1")) 1)
+			(if (eql (svref ind1 x) 1)
 				(setf (svref ind1 x) 0)
-				(setf (svref ind1 x) 0)))
+				(setf (svref ind1 x) 1)))
 		(if (< (random 1.0) *boolean-mutation-probability*)
-			(if (eql (svref ind2 (dprint x "mutate 2")) 1)
+			(if (eql (svref ind2 x) 1)
 		  	(setf (svref ind2 x) 0)
-		  	(setf (svref ind2 x) 0)))
+		  	(setf (svref ind2 x) 1)))
 	)
-	(dprint "End of modifier")
-	(dprint ind1 "ind1:")
-	(dprint ind2 "ind2:")
+	;;(dprint "End of modifier")
+	;;(dprint ind1 "ind1:")
+	;;(dprint ind2 "ind2:")
 	
 	(list ind1 ind2)
 )
@@ -993,7 +999,7 @@ more pellets, higher (better) fitness."
 ;;;(vec-test)
 ;;;
 (defun e-test ()
-(evolve 50 100
+(evolve 10 10
  :setup #'boolean-vector-sum-setup
  :creator #'boolean-vector-creator
  :selector #'tournament-selector

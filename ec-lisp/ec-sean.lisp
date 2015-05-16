@@ -1,4 +1,6 @@
 ;;; Project 4: Build a simple evolutionary computation system.
+(setf *random-state* (make-random-state t))
+
 
 ;;; This is a nontrivial project to start with.  Do not discuss
 ;;; programming issues related to this project with other groups.
@@ -73,7 +75,7 @@ Information on compiling code and doing compiler optimizations can be found in t
 
 
 ;;; Useful Functions and Macros
-(defparameter *debug* t)
+(defparameter *debug* nil)
 
 (defun dprint (some-variable &optional (additional-message '()))
 	"Debug Print - useful for allowing error/status messages
@@ -508,8 +510,24 @@ Error generated if the queue is empty."
     (swap (elt queue index) (elt queue (1- (length queue))))
     (vector-pop queue)))
 
+(defun get-random-element (some-list)
+	(nth (random (length some-list)) some-list)	
+)
+(defun get-random-nil-element (some-list)
+	(let ((value '(t)))
+		(loop while (not (equal (first value)  nil)) do
+			(setf value (get-random-element some-list))
+		)
+	value
+	)
+)
+
 (defun ptc2(size)
+	(if (= size 1) (get-random-element *terminal-set*) 
 	(let ((temp-cell (copy-list '())) (list-of-cells (copy-list '((2)))) (current-nonterminal (copy-list '())) (new-thing (copy-list '(()))) (begining-of-list (copy-list '())))
+		;; new-thing is terribly named as i wasnt in the best mood, will change before turnin
+		;;it's the current cell we're modifying out of the list of cells. at first there's just a single empty cell 
+		;;a "cell" is a place to put an argument
 		(setf begining-of-list new-thing)
 		(dotimes (n (- size 1))
 
@@ -520,7 +538,7 @@ Error generated if the queue is empty."
 				(dprint "x is " x)
 				(setf temp-cell (copy-list '()))
 					
-					
+				;;the hardest step, figureing out how to add this thing to the end of the darn linked list without screwing things up
 				(push (copy-list '()) temp-cell)
 				(setf (cdr (last list-of-cells)) (list temp-cell))	
 				(setf (cdr (last (first new-thing))) temp-cell)
@@ -539,13 +557,8 @@ Error generated if the queue is empty."
 		)
 		(loop for x in list-of-cells do
 			(if (equal (first x) nil) (setf (first x) (list (get-random-element *terminal-set*)))))
-		(print "")
-		(print "")
-		(print "")
-		(print "")
-		(print "")
 		(first begining-of-list)
-	)
+	))
 )
 
 
@@ -554,9 +567,7 @@ Error generated if the queue is empty."
 (defun gp-creator ()
   "Picks a random number from 1 to 20, then uses ptc2 to create
 a tree of that size"
-
-    ;;; IMPLEMENT ME
-  )
+	(ptc2 (+ (random 20) 1)))
 
 
 
@@ -564,9 +575,13 @@ a tree of that size"
 
 (defun num-nodes (tree)
   "Returns the number of nodes in tree, including the root"
-
-    ;;; IMPLEMENT ME
-  )
+    (let ((sum 0));;nice simple recursive implementation for counting of nodes
+	(dotimes (n (length tree))
+    		(if (atom (nth n tree)) (incf sum)  (setf sum (+ sum (num-nodes (nth n tree)))))
+	)
+	sum;;return value	
+    )
+)
 
 
 (defun nth-subtree-parent (tree n)
@@ -601,13 +616,80 @@ If n is bigger than the number of nodes in the tree
   ;0 
   ;1 
   ;NIL
-
+;;	(print "recursive call on")
+;;	(print n)
+	
+	
+	;;NOTE: not everything here has a purpose, and there are some really stupid looking !@#$ going on. 
+	;;this is a result of me changing the algorithm to solve this as i was debugging it
+	;;There are left over variables for trying to make ideas for how to actually 
+	;;solve this problem i'll clean it up when we have overhead to do so.
+	;;inspired off of num-nodes, and uses num nodes. 
+	;; will only do a recursive call iff that subtree is big enough that it MUST have the desired subtree in it
+    (if (>= (+ n 1) (num-nodes tree)) (return-from nth-subtree-parent (+ (- n (num-nodes tree)) 1 ))) 
+    (let ((sum 0) (k 0) (temp 0) (found '()) (parent '()));;nice simple recursive implementation for counting of nodes
+        (dotimes (my-n (length tree))
+                (setf k my-n)
+		(dprint "before first return")
+		(if (= n -1) (return-from nth-subtree-parent (list tree (- my-n 1) )))
+		(dprint "after first return")
+		(if (atom (nth my-n tree)) (progn (decf n) )   
+			(progn 
+				(dprint "before second return")
+				(if (= n 0) (return-from nth-subtree-parent (list (nth my-n tree) 0)))
+				(dprint "after second return")
+				(setf temp n)
+				(setf sum (+ sum (num-nodes (nth my-n tree))))
+				
+				(dprint sum)
+				(dprint n)
+				(dprint "before third return")
+				(if (> sum (+ n 1)) (return-from nth-subtree-parent (nth-subtree-parent (nth my-n tree) (+ n 0))) ()) 
+				(dprint "after third return")
+				(setf n (- n sum))
+				(setf sum 0)
+			))
+		        
+	)
+     )
     ;;; IMPLEMENT ME
 
   )
 
 
 (defparameter *mutation-size-limit* 10)
+(defun crossover-gp (ind1 ind2)
+	(dprint "hello world")
+	(dprint (num-nodes ind1))
+	(dprint (num-nodes ind2))
+	(let (  (first-index 0)
+		(second-index 0)
+		(new-tree1 '())
+		(new-tree2 '())
+		(subtree1 (nth-subtree-parent ind1 (random (- (num-nodes ind1) 1)))) 
+		(subtree2 (nth-subtree-parent ind2 (random (- (num-nodes ind2) 1)))))
+		
+		(setf first-index (+ (second subtree1) 1))
+		(setf second-index (+ (second subtree2) 1))
+
+		(dprint subtree1)
+		(dprint subtree2)
+		(dprint (first subtree1))
+		(dprint (first subtree2))
+		(dprint "first setf")
+		(setf new-tree1 (copy-tree (nth first-index (first subtree1))))
+		(dprint "second setf")
+		(setf new-tree2 (copy-tree (nth second-index (first subtree2))))
+		(dprint "third setf") 
+		(setf (nth first-index (first subtree1)) new-tree2) 
+		(dprint "fourth setf")
+		(dprint "subtree 2 is ")
+		(dprint subtree2)
+		(setf (nth second-index (first subtree2)) new-tree1) 
+		(dprint "done")
+		(list ind1 ind2)
+	) 
+)
 (defun gp-modifier (ind1 ind2)
   "Flips a coin.  If it's heads, then ind1 and ind2 are
 crossed over using subtree crossover.  If it's tails, then
@@ -615,7 +697,12 @@ ind1 and ind2 are each mutated using subtree mutation, where
 the size of the newly-generated subtrees is pickedc at random
 from 1 to 10 inclusive.  Doesn't damage ind1 or ind2.  Returns
 the two modified versions as a list."
-	
+	(setf ind1 (copy-tree ind1))
+	(setf ind2 (copy-tree ind2))
+	(if (= (random 2) 0)
+		(crossover-gp ind1 ind2)
+		(list (modify-tree ind1) (modify-tree ind2))
+	)	
     ;;; IMPLEMENT ME
 )
 
@@ -999,7 +1086,8 @@ more pellets, higher (better) fitness."
 ;;;(vec-test)
 ;;;
 (defun e-test ()
-(evolve 10 10
+  (evolve 10 10
+;;(setf *debug* nil)
  :setup #'boolean-vector-sum-setup
  :creator #'boolean-vector-creator
  :selector #'tournament-selector
@@ -1007,4 +1095,40 @@ more pellets, higher (better) fitness."
  :evaluator #'boolean-vector-evaluator
  :printer #'simple-printer)
 )
+(defun ptc2-test ()
+	(setf *terminal-set* '(x))
+	(setf *nonterminal-set* '((+ 2) (- 2) (* 2) (% 2) (sin 1) (cos 1) (exp 1)))
+ 
 
+	(print "here's (ptc2 1)")
+	(print (ptc2 1))
+	(print "here's (ptc2 10)")
+	(print (ptc2 10))
+
+)
+(defun num-nodes-test ()
+	(setf expression (ptc2 10))
+	(print "expression:")
+	(print expression)
+	(print "num nodes is:")
+	(print (num-nodes expression))
+)
+(defun test-subtree ()
+      (let ((my-x 0))
+	
+	(dotimes (my-x 12) 
+             (print (nth-subtree-parent '(a (b c) (d e (f (g h i j)) k)) my-x ))))
+) 
+(defun crossover-test ()
+	(dotimes (blah 10)
+		(print "origional:")
+		(print '(1 (2 (5 (6 7)))))
+		(print '(a b c (d e (f g h))))
+		(print (crossover-gp (copy-tree '(1 (2 (5 (6 7))))) (copy-tree '(a b c (d e (f g h)))))))
+	
+)
+(ptc2-test)
+(num-nodes-test)
+(test-subtree)
+(crossover-test)
+(print "hey i finished at least")

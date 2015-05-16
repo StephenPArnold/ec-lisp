@@ -523,7 +523,7 @@ Error generated if the queue is empty."
 )
 
 (defun ptc2(size)
-	(if (= size 1) (get-random-element *terminal-set*) 
+	(if (= size 1) (list (get-random-element *terminal-set*)) 
 	(let ((temp-cell (copy-list '())) (list-of-cells (copy-list '((2)))) (current-nonterminal (copy-list '())) (new-thing (copy-list '(()))) (begining-of-list (copy-list '())))
 		;; new-thing is terribly named as i wasnt in the best mood, will change before turnin
 		;;it's the current cell we're modifying out of the list of cells. at first there's just a single empty cell 
@@ -636,7 +636,7 @@ If n is bigger than the number of nodes in the tree
 		(if (atom (nth my-n tree)) (progn (decf n) )   
 			(progn 
 				(dprint "before second return")
-				(if (= n 0) (return-from nth-subtree-parent (list (nth my-n tree) 0)))
+				(if (= n -1) (return-from nth-subtree-parent (list (nth my-n tree) 0)))
 				(dprint "after second return")
 				(setf temp n)
 				(setf sum (+ sum (num-nodes (nth my-n tree))))
@@ -657,7 +657,7 @@ If n is bigger than the number of nodes in the tree
   )
 
 
-(defparameter *mutation-size-limit* 10)
+(defparameter *mutation-size-limit* 3)
 (defun crossover-gp (ind1 ind2)
 	(dprint "hello world")
 	(dprint (num-nodes ind1))
@@ -689,6 +689,22 @@ If n is bigger than the number of nodes in the tree
 		(dprint "done")
 		(list ind1 ind2)
 	) 
+)
+(defun modify-tree (ind1)
+	(dprint "hello world")
+	(dprint (num-nodes ind1))
+	(let (  (first-index 0)
+		(new-tree (ptc2 (+ (random *mutation-size-limit*) 1)))
+		(subtree1 (nth-subtree-parent ind1 (random (- (num-nodes ind1) 1)))))
+		(print "hi1")
+		(print "nth-subtree returned")
+		(print subtree1)
+		(setf first-index (+ (second subtree1) 1))
+		(print "hi2")
+		(setf (nth first-index (first subtree1)) new-tree) 
+		(print "hi3")
+		ind1			
+	)
 )
 (defun gp-modifier (ind1 ind2)
   "Flips a coin.  If it's heads, then ind1 and ind2 are
@@ -1117,7 +1133,7 @@ more pellets, higher (better) fitness."
       (let ((my-x 0))
 	
 	(dotimes (my-x 12) 
-             (print (nth-subtree-parent '(a (b c) (d e (f (g h i j)) k)) my-x ))))
+             (print (nth-subtree-parent '(a (b) (1 2) (d e (f (g h i j)) k)) my-x ))))
 ) 
 (defun crossover-test ()
 	(dotimes (blah 10)
@@ -1127,8 +1143,24 @@ more pellets, higher (better) fitness."
 		(print (crossover-gp (copy-tree '(1 (2 (5 (6 7))))) (copy-tree '(a b c (d e (f g h)))))))
 	
 )
+(defun modify-tree-test ()
+	(setf *terminal-set* '(x))
+	(setf *nonterminal-set* '((+ 2) (- 2) (* 2) (% 2) (sin 1) (cos 1) (exp 1)))
+ 
+	(dotimes (blah 10)
+		(print (modify-tree (copy-tree '(1 2 (4 5 7))))) )	
+	(setf *random-tree* (ptc2 5))
+	(print "randomtere:")
+	(print *random-tree*)
+	(dotimes (blah 10)
+		(print "origional:")
+		(print *random-tree*)
+		(print "modified:")
+		(print (modify-tree *random-tree*))
+))
 (ptc2-test)
 (num-nodes-test)
 (test-subtree)
 (crossover-test)
+(modify-tree-test)
 (print "hey i finished at least")

@@ -1106,16 +1106,9 @@ more pellets, higher (better) fitness."
 ;;;(vec-test)
 ;;;
 (defun e-test ()
-  	;;; (evolve 50 100
-	;;;   :setup #'boolean-vector-sum-setup
-	;;;   :creator #'boolean-vector-creator
-	;;;   :selector #'tournament-selector
-	;;;   :modifier #'boolean-vector-modifier
-	;;;   :evaluator #'boolean-vector-evaluator
-	;;;   :printer #'simple-printer)
-	;;;
-  (evolve 50 100
-;;(setf *debug* nil)
+
+ (setf *debug* t)
+ (evolve 50 100
  :setup #'boolean-vector-sum-setup
  :creator #'boolean-vector-creator
  :selector #'tournament-selector

@@ -1070,7 +1070,7 @@ more pellets, higher (better) fitness."
 	(print "num nodes is:")
 	(print (num-nodes expression))
 )
-(defun fuck-you ()
+(defun test-subtree ()
       (let ((my-x 0))
 	
 	(dotimes (my-x 12) 
@@ -1078,5 +1078,5 @@ more pellets, higher (better) fitness."
 ) 
 (ptc2-test)
 (num-nodes-test)
-(fuck-you)
+(test-subtree)
 (print "hey i finished at least")

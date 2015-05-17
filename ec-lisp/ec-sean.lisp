@@ -1,6 +1,6 @@
 ;;; Project 4: Build a simple evolutionary computation system.
 (setf *random-state* (make-random-state t))
-
+(require :sb-sprof)
 
 ;;; This is a nontrivial project to start with.  Do not discuss
 ;;; programming issues related to this project with other groups.
@@ -195,12 +195,14 @@ POP-SIZE, using various functions"
   ;; your function should call PRINTER each generation, and also print out or the
   ;; best individual discovered over the whole run at the end, plus its fitness
   ;; and any other statistics you think might be nifty.
-	
+
+;;; DAVID - could the variable declarations (below) go into the unused function "boolean-vector-sum-setup"? 
 	(let ((population ())
 				(fitnesses ()) ;; Might be able to use a lambda function to "create" fitnesses on the fly.
 				(ind ())
-				(best ())
-				(best-list ())
+				(best ()) ;; an index into the population
+				(best-ind ()) ;; the best individual of the population
+				(best-list ()) ;; a list of the best fitnesses
 				(cycles 0)
 				(ideal 100))
 ;;; Create initial population
@@ -212,33 +214,55 @@ POP-SIZE, using various functions"
 			(setf fitnesses ())
 			(dotimes (ind (length population))
 				;;(dprint ind "index")
+				(dprint (nth ind population) "here's the individual to evaluate")
 				(setf fit (funcall evaluator (nth ind population)))
+				(print "hello")
 				(setf fitnesses (append fitnesses (list fit)))
-				;;(dprint fit "fitness:")
+				(dprint fit "fitness:")
 				(if (or (eql best nil) (> fit (funcall evaluator (nth best population))))
 					(setf best ind)))
+			(setf best-ind (nth best population))
+			(setf fit (funcall evaluator best-ind))
 			(dprint fitnesses "Fitnesses: ")
 			(dprint (nth best fitnesses) "best:")
 			(setf best-list (append best-list (list (nth best fitnesses))))
+			(print "got past that")
 			(setf q ())
+
+;;; DAVID - do you think we can get rid of this "let" statement?
 			(let ((ind1 ())
-						(ind2 ()))
-				(dotimes (x (/ (length population) 2))
-					;;(dprint x "Loop :")
+			      (ind2 ()))
+				(print "before loop")	
+				(dotimes (x  (ceiling (length population) 2))
+					(setf *debug* t)
+					(dprint x "Loop :")
+					(setf *debug* nil)
 					(setf ind1 (first (funcall selector 1 population fitnesses)))
 					(setf ind2 (first (funcall selector 1 population fitnesses)))
 					(setf q (append q (funcall modifier ind1 ind2)))))
 			(setf population q)
 			(dprint population "New Population: ")
 			(setf cycles (1+ cycles))
-		while (or (< cycles generations) (eql (funcall evaluator (nth best population)) ideal)))
+			(print "cycles is")
+			(print cycles)
+			(print "generations is ")
+			(print generations)
+;;; DAVID - not sure how I feel about the last part of the following line ... I wonder
+;;; 				if there is a better way to check for 'fit' equating to ideal?
+		while (and (< cycles generations) (/= fit ideal)))
+;;; DAVID - the repeated portion of Algo 20 (The GA Algo) has two (repeated) parts: looking for
+;;; 				the best fit and crossover/mutation. My concern is that this function might not be
+;;; 				"generic" enough. I use BEST as an index into the population, but after we mutate,
+;;; 				the index is kind of useless as it might point to an element which was just modified
+;;; 				(and is no longer the "best" solution. To mitigate against that, I saved off the best
+;;; 				vector as BEST-IND .... but doing so may make this function less-than-generic.
+;;; 				Thoughts???
+;;;
+		(print "hello2")
+		(funcall printer population fitnesses) ;; problem: prints cycle AFTER best discovered
 		
-;;;		(dotimes (ind (length population))
-;;;			(setf (svref fitnesses ind) (funcall evaluator (svref population ind))))
-		(funcall printer population fitnesses) ;;(coerce fitnesses 'list))
-		(print best-list)
-		;;(dprint (dotimes (x (length population))
-		;;	(format t "~%~A  ~A" x (nth x population))) "Test Output")
+		(print best-ind)
+		best-list
 	)
 )
 
@@ -289,7 +313,7 @@ POP-SIZE, using various functions"
 			(return x))))
 
 (defun boolean-vector-creator ()
-  "      Creates a boolean-vector *boolean-vector-length* in size, filled with
+  "Creates a boolean-vector *boolean-vector-length* in size, filled with
 random Ts and NILs, or with random 1s and 0s, your option.
 (Algorithm 21.)"
 	(let ((vec (make-array *boolean-vector-length* :initial-element nil)))
@@ -312,26 +336,28 @@ given allele in a child will mutate.  Mutation simply flips the bit of the allel
 (Algorithms 22 & 25.)"
 	;;(dprint ind1 "ind1:")
 	;;(dprint ind2 "ind2:")
+	(let ((off1 (copy-seq ind1))
+				(off2 (copy-seq ind2)))
 	(dotimes (x (length ind1))
 		;;(dprint x "Entering modifier step: ")
 		(if (< (random 1.0) *boolean-crossover-probability*)
-			(swap (svref ind1 x) (svref ind2 x))
+			(swap (svref off1 x) (svref off2 x))
 		)
 ;;; These don't feel very "lispy"		
 		(if (< (random 1.0) *boolean-mutation-probability*)
-			(progn (print "this actually happens") (if (eql (svref ind1 x) 1)
-				(setf (svref ind1 x) 0)
-				(setf (svref ind1 x) 1))))
+			(if (eql (svref off1 x) 1)
+				(setf (svref off1 x) 0)
+				(setf (svref off1 x) 1)))
 		(if (< (random 1.0) *boolean-mutation-probability*)
-			(if (eql (svref ind2 x) 1)
-		  	(setf (svref ind2 x) 0)
-		  	(setf (svref ind2 x) 1)))
+			(if (eql (svref off2 x) 1)
+		  	(setf (svref off2 x) 0)
+		  	(setf (svref off2 x) 1)))
 	)
 	;;(dprint "End of modifier")
 	;;(dprint ind1 "ind1:")
 	;;(dprint ind2 "ind2:")
 	
-	(list ind1 ind2)
+	(list off1 off2))
 )
 
 (defun boolean-vector-evaluator (ind1)
@@ -339,7 +365,6 @@ given allele in a child will mutate.  Mutation simply flips the bit of the allel
 its fitness."
 	(max-ones ind1)
 )
-
 
 (defun boolean-vector-sum-setup ()
   "Does nothing.  Perhaps you might use this to set up various
@@ -360,15 +385,7 @@ its fitness."
 ;;;|#
 
 
-
-
-
-
-
 ;;;;;; FLOATING-POINT VECTOR GENETIC ALGORTITHM
-
-
-
 
 ;;; Creator, Modifier, Evaluator, and Setup functions for the
 ;;; GA Max-ONES Problem.  Assume that you are evolving a vector
@@ -399,7 +416,7 @@ its fitness."
 
 (defparameter *float-vector-length* 100)
 
-(defparameter *float-problem :rastrigin)
+(defparameter *float-problem* :rastrigin)
 (defparameter *float-min* -5.12)  ;; these will change based on the problem
 (defparameter *float-max* 5.12)   ;; likewise
 
@@ -511,7 +528,10 @@ Error generated if the queue is empty."
     (vector-pop queue)))
 
 (defun get-random-element (some-list)
-	(nth (random (length some-list)) some-list)	
+	(dprint "random element of list ")
+	(dprint some-list)
+	(if (not some-list) nil
+		(nth (random (length some-list)) some-list))	
 )
 (defun get-random-nil-element (some-list)
 	(let ((value '(t)))
@@ -523,7 +543,7 @@ Error generated if the queue is empty."
 )
 
 (defun ptc2(size)
-	(if (= size 1) (list (get-random-element *terminal-set*)) 
+	(if (<= size 1) (list (get-random-element *terminal-set*)) 
 	(let ((temp-cell (copy-list '())) (list-of-cells (copy-list '((2)))) (current-nonterminal (copy-list '())) (new-thing (copy-list '(()))) (begining-of-list (copy-list '())))
 		;; new-thing is terribly named as i wasnt in the best mood, will change before turnin
 		;;it's the current cell we're modifying out of the list of cells. at first there's just a single empty cell 
@@ -567,7 +587,10 @@ Error generated if the queue is empty."
 (defun gp-creator ()
   "Picks a random number from 1 to 20, then uses ptc2 to create
 a tree of that size"
-	(ptc2 (+ (random 20) 1)))
+	(print "HEY HERE'S SPMETJNG I MADE")
+	(print (list (ptc2 (+ (random 20) 1))))
+
+)
 
 
 
@@ -630,9 +653,7 @@ If n is bigger than the number of nodes in the tree
     (let ((sum 0) (k 0) (temp 0) (found '()) (parent '()));;nice simple recursive implementation for counting of nodes
         (dotimes (my-n (length tree))
                 (setf k my-n)
-		(dprint "before first return")
 		(if (= n -1) (return-from nth-subtree-parent (list tree (- my-n 1) )))
-		(dprint "after first return")
 		(if (atom (nth my-n tree)) (progn (decf n) )   
 			(progn 
 				(dprint "before second return")
@@ -691,11 +712,16 @@ If n is bigger than the number of nodes in the tree
 	) 
 )
 (defun modify-tree (ind1)
+	(print "BEFORE")
+	(print ind1)
 	(dprint "hello world")
 	(dprint (num-nodes ind1))
 	(let (  (first-index 0)
 		(new-tree (ptc2 (+ (random *mutation-size-limit*) 1)))
-		(subtree1 (nth-subtree-parent ind1 (random (- (num-nodes ind1) 1)))))
+		(subtree1 '()))
+		(if (> (length ind1) 1) 
+			(setf subtree1 (nth-subtree-parent ind1 (random (- (num-nodes ind1) 1))))
+			(return-from modify-tree new-tree))
 		;;(print "hi1")
 		;;(print "nth-subtree returned")
 		;;(print subtree1)
@@ -703,6 +729,10 @@ If n is bigger than the number of nodes in the tree
 		;;(print "hi2")
 		(setf (nth first-index (first subtree1)) new-tree) 
 		;;(print "hi3")
+		(print "AFTER")
+		(print ind1)
+		(if (atom ind1) (print (/ 1 0)))
+		(sleep 1)
 		ind1			
 	)
 )
@@ -716,8 +746,10 @@ the two modified versions as a list."
 	(setf ind1 (copy-tree ind1))
 	(setf ind2 (copy-tree ind2))
 	(if (= (random 2) 0)
-		(crossover-gp ind1 ind2)
+		;;(crossover-gp ind1 ind2)
 		(list (modify-tree ind1) (modify-tree ind2))
+		(list (modify-tree ind1) (modify-tree ind2))
+	
 	)	
     ;;; IMPLEMENT ME
 )
@@ -801,13 +833,24 @@ returning most-positive-fixnum as the output of that expression."
   ;;;  ....
   ;;;  (error (condition)
   ;;;     (format t "~%Warning, ~a" condition) most-positive-fixnum))
-
-	
 	(handler-case
-  		
+
+	(let ((sum 0.0))
+		(loop for x in *vals* do (progn
+			(print "some value in vals")
+			(print x)
+			(print "ind is ")
+			(print ind)
+			(setf *x* x)
+				(setf sum 
+					(+ sum (abs (- (float (eval ind)) (poly-to-learn x))))))	
+		)
+		(/ 1.0 (+ sum 1))
+	)
 	(error (condition)
-            (format t "~%Warning, ~a" condition) most-positive-fixnum))
-  ;;; IMPLEMENT ME
+         		   (format t "~%Warning, ~a" condition) (return-from gp-symbolic-regression-evaluator most-positive-fixnum)))
+ 
+	 ;;; IMPLEMENT ME
 
   )
 
@@ -1107,8 +1150,8 @@ more pellets, higher (better) fitness."
 ;;;
 (defun e-test ()
 
- (setf *debug* t)
- (evolve 50 100
+(setf *debug* nil)
+  (evolve 50 100
  :setup #'boolean-vector-sum-setup
  :creator #'boolean-vector-creator
  :selector #'tournament-selector
@@ -1148,12 +1191,29 @@ more pellets, higher (better) fitness."
 		(print (crossover-gp (copy-tree '(1 (2 (5 (6 7))))) (copy-tree '(a b c (d e (f g h)))))))
 	
 )
+
+;;(defun poly-to-learn (x) (+ (* x x x x) (* x x x) (* x x) x))
+
+;; define the function set
+;;(defparameter *x* nil) ;; to be set in gp-evaluator
+;;(defun x () *x*)
+;;(defun % (x y) (if (= y 0) 0 (/ x y)))  ;; "protected division"
+;;; the rest of the functions are standard Lisp functions
+
+
+
+
+;;; GP SYMBOLIC REGRESSION EVALUATION
+
+;;(defun gp-symbolic-regression-evaluator (ind)
+ 
 (defun modify-tree-test ()
+	(setf *debug* nil)
 	(setf *terminal-set* '(x))
 	(setf *nonterminal-set* '((+ 2) (- 2) (* 2) (% 2) (sin 1) (cos 1) (exp 1)))
- 
-	(dotimes (blah 10)
-		(print (modify-tree (copy-tree '(1 2 (4 5 7))))) )	
+ 	(print "doing that mutation 100 times")
+	(dotimes (blah 100)
+		(print (modify-tree (copy-tree '(x)))))	
 	(setf *random-tree* (ptc2 5))
 	(print "randomtere:")
 	(print *random-tree*)
@@ -1163,12 +1223,39 @@ more pellets, higher (better) fitness."
 		(print "modified:")
 		(print (modify-tree *random-tree*))
 ))
+(defun test-gp-evaluator ()
+	(gp-symbolic-regression-setup)	
+	(print "error with function X")
+	(print (gp-symbolic-regression-evaluator '(X)))	
+	(print "error with perfect function")
+	(print (gp-symbolic-regression-evaluator '(+ (* (x) (x) (x) (x)) (* (x) (x) (x)) (* (x) (x)) (x))))
 
-(setf *debug* t)
+)
+(defun test-gp-symbolic ()
+	(gp-symbolic-regression-setup)	
+	(evolve 10 10
+ 	:setup #'gp-symbolic-regression-setup
+	:creator #'gp-creator
+	:selector #'tournament-selector
+	:modifier #'gp-modifier
+  	:evaluator #'gp-symbolic-regression-evaluator
+	:printer #'simple-printer)
+
+)
+
+;;     (sb-sprof:with-profiling (:max-samples 10000
+;;                               :mode :alloc
+;;                               :report :flat)
+;;       (test-gp-symbolic))
+
 (e-test)
+;;
 ;;(ptc2-test)
 ;;(num-nodes-test)
 ;;(test-subtree)
 ;;(crossover-test)
 ;;(modify-tree-test)
+;;(test-gp-evaluator)
+
+
 ;;(print "hey i finished at least")

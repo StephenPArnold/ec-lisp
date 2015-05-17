@@ -188,7 +188,7 @@ POP-SIZE, using various functions"
   ;;                            its fitness, and any other interesting statistics
   ;;                            you think interesting for that generation.
   ;;(EVALUATOR individual)      evaluates an individual, and returns its fitness.
-  ;;Pop will be guaranteed to be a multiple of 2 in size.
+  ;: Pop will be guaranteed to be a multiple of 2 in size.
   ;;
   ;; HIGHER FITNESSES ARE BETTER
 
@@ -310,7 +310,9 @@ random Ts and NILs, or with random 1s and 0s, your option.
 				(setf (svref vec x) 0)
 				(setf (svref vec x) 1)
 			)
-		)(list vec))
+		)
+		(list vec)
+	)
 )
 
 (defparameter *boolean-crossover-probability* 0.2)
@@ -359,7 +361,6 @@ its fitness."
 (ahem) global variables to define the problem being evaluated, I dunno."
   )
 
-
 ;;; an example way to fire up the GA.  It should easily discover
 ;;; a 100% correct solution.
 ;;;#|
@@ -371,6 +372,8 @@ its fitness."
 ;;;  :evaluator #'boolean-vector-evaluator
 ;;;	:printer #'simple-printer)
 ;;;|#
+
+
 
 
 ;;;;;; FLOATING-POINT VECTOR GENETIC ALGORTITHM
@@ -403,29 +406,34 @@ its fitness."
 
 (defparameter *float-vector-length* 100)
 
-(defparameter *float-problem* :rastrigin)
+;;;(defparameter *float-problem* :rastrigin)
+;;;(defparameter *float-problem* rastrigin)
 (defparameter *float-min* -5.12)  ;; these will change based on the problem
 (defparameter *float-max* 5.12)   ;; likewise
 
 (defun rastrigin (vec)
-	"The total number of ones in the vector vec."
+	"The <Rastrigin> Formula ... needs more description."
 	(let ((n (length vec)))
-		(+ (* 10 n) (apply '+ (mapcar (lambda (x) (- (* x x) (* 10 (cos (* 2 pi x))))) vec)))
+		(+ (* 10 n) (reduce '+ (map 'vector #'(lambda (x) (- (* x x) (* 10 (cos (* 2 pi x))))) vec)))
 	)
 )
 
 (defun float-vector-creator ()
   "Creates a floating-point-vector *float-vector-length* in size, filled with
 random numbers in the range appropriate to the given problem (Algorithm 7)."
-	(let ((vec (make-array *float-vector-length* :initial-element nil)))
+	(let ((vec (make-array *float-vector-length* :initial-element 0.0)))
 		(dotimes (x *float-vector-length*)
-			(setf (svref vec x) (+ (random (- *float-max* *float-min*)) *float-min*))))
-	(list vec)
+			(print x)
+			(setf (svref vec x) (+ (random (- *float-max* *float-min*)) *float-min*))
+		)
+	(dprint (list vec) "vec:")
+	)
 )
 
 (defparameter *float-crossover-probability* 0.2)
 (defparameter *float-mutation-probability* 0.1)   ;; I just made up this number
 (defparameter *float-mutation-variance* 0.01)     ;; I just made up this number
+
 (defun float-vector-modifier (ind1 ind2)
   "Copies and modifies ind1 and ind2 by crossing them over with a uniform crossover,
 then mutates the children.  *crossover-probability* is the probability that any
@@ -435,33 +443,49 @@ given allele in a child will mutate.  Mutation does gaussian convolution on the 
 	;;(dprint ind1 "ind1:")
 	;;(dprint ind2 "ind2:")
 	(let ((off1 (copy-seq ind1))
-				(off2 (copy-seq ind2)))
-	(dotimes (x (length ind1))
-		;;(dprint x "Entering modifier step: ")
-		(if (< (random 1.0) *float-crossover-probability*)
-			(swap (svref off1 x) (svref off2 x))
+				(off2 (copy-seq ind2))
+				(n 0.0))
+		(dotimes (x (length ind1))
+;;(dprint x "Entering modifier step: ")
+			(if (< (random 1.0) *float-crossover-probability*)
+				(swap (svref off1 x) (svref off2 x))
+			)
+;;; Alogo 11: Gaussian Convolution
+			(if (< (random 1.0) *float-mutation-probability*)
+				(loop do 
+					(setf n (normal 0 *float-mutation-variance*))
+;;;					(dprint n "Normal: ")
+;;;					(dprint (svref off1 x) "Element1: ")
+				until (and (<= *float-min* (+ n (svref off1 x))) (>= *float-max* (+ n (svref off1 x)))))
+				(setf (svref off1 x) (+ n (svref off1 x)))
+			)
+			(if (< (random 1.0) *float-mutation-probability*)
+				(loop do 
+					(setf n (normal 0 *float-mutation-variance*))
+;;;					(dprint n "Normal: ")
+;;;					(dprint (svref off2 x) "Element2: ")
+				until (and (<= *float-min* (+ n (svref off2 x))) (>= *float-max* (+ n (svref off2 x)))))
+				(setf (svref off2 x) (+ n (svref off2 x)))
+			)
 		)
-;;; These don't feel very "lispy"		
-		(if (< (random 1.0) *float-mutation-probability*)
-			(if (eql (svref off1 x) 1)
-				(setf (svref off1 x) 0)
-				(setf (svref off1 x) 1)))
-		(if (< (random 1.0) *float-mutation-probability*)
-			(if (eql (svref off2 x) 1)
-		  	(setf (svref off2 x) 0)
-		  	(setf (svref off2 x) 1)))
-	)
 	;;(dprint "End of modifier")
 	;;(dprint ind1 "ind1:")
 	;;(dprint ind2 "ind2:")
 	
-	(list off1 off2))
+		(list off1 off2)
+	)
 )
+
+;;; Gaussian Random Sampler
+(defun normal (&optional (mu 0) (sigma 1))
+  (let ((u (random 1.0))
+  	(v (random 1.0)))
+  	    (+ mu (* sigma (sqrt (* -2 (log (- 1.0 u)))) (cos (* 2 pi v))))))
 
 (defun float-vector-sum-evaluator (ind1)
   "Evaluates an individual, which must be a floating point vector, and returns
 its fitness."
-	(funcall *float-problem* ind1)
+	(rastrigin ind1)
 )
 
 (defun float-vector-sum-setup ()
@@ -1115,18 +1139,18 @@ more pellets, higher (better) fitness."
 ;;;(vec-test)
 ;;;
 (defun e-test ()
-(setf *debug* nil)
+	(setf *debug* nil)
   (evolve 50 100
- :setup #'boolean-vector-sum-setup
- :creator #'boolean-vector-creator
- :selector #'tournament-selector
- :modifier #'boolean-vector-modifier
- :evaluator #'boolean-vector-evaluator
- :printer #'simple-printer)
+		:setup #'boolean-vector-sum-setup
+ 		:creator #'boolean-vector-creator
+ 		:selector #'tournament-selector
+ 		:modifier #'boolean-vector-modifier
+ 		:evaluator #'boolean-vector-evaluator
+ 		:printer #'simple-printer)
 )
 (defun f-test ()
-	(setf *debug* nil)
-	(evolve 50 100
+	(setf *debug* t)
+	(evolve 5 100
  		:setup #'float-vector-sum-setup
 		:creator #'float-vector-creator
 		:selector #'tournament-selector

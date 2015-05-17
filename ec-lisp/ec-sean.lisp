@@ -413,24 +413,27 @@ its fitness."
 ;; ; values, consult Section 11.2.2.
 
 
-
 (defparameter *float-vector-length* 100)
 
 (defparameter *float-problem* :rastrigin)
 (defparameter *float-min* -5.12)  ;; these will change based on the problem
 (defparameter *float-max* 5.12)   ;; likewise
 
+(defun rastrigin (vec)
+	"The total number of ones in the vector vec."
+	(let ((n (length vec)))
+		(+ (* 10 n) (apply '+ (mapcar (lambda (x) (- (* x x) (* 10 (cos (* 2 pi x))))) vec)))
+	)
+)
 
 (defun float-vector-creator ()
   "Creates a floating-point-vector *float-vector-length* in size, filled with
-random numbers in the range appropriate to the given problem"
-    ;;; IMPLEMENT ME
-    ;;; you might as well use random uniform numbers from *float-vector-min*
-    ;;; to *float-vector-max*.  
-
-  )
-
-
+random numbers in the range appropriate to the given problem (Algorithm 7)."
+	(let ((vec (make-array *float-vector-length* :initial-element nil)))
+		(dotimes (x *float-vector-length*)
+			(setf (svref vec x) (+ (random (- *float-max* *float-min*)) *float-min*))))
+	(list vec)
+)
 
 (defparameter *float-crossover-probability* 0.2)
 (defparameter *float-mutation-probability* 0.1)   ;; I just made up this number
@@ -440,22 +443,38 @@ random numbers in the range appropriate to the given problem"
 then mutates the children.  *crossover-probability* is the probability that any
 given allele will crossover.  *mutation-probability* is the probability that any
 given allele in a child will mutate.  Mutation does gaussian convolution on the allele."
-
-    ;;; IMPLEMENT ME
-    ;;; Note: crossover is probably identical to the bit-vector crossover
-    ;;; See "Gaussian Convolution" (Algorithm 11) in the book for mutation
-
+;;; See "Gaussian Convolution" (Algorithm 11) in the book for mutation
+	;;(dprint ind1 "ind1:")
+	;;(dprint ind2 "ind2:")
+	(let ((off1 (copy-seq ind1))
+				(off2 (copy-seq ind2)))
+	(dotimes (x (length ind1))
+		;;(dprint x "Entering modifier step: ")
+		(if (< (random 1.0) *float-crossover-probability*)
+			(swap (svref off1 x) (svref off2 x))
+		)
+;;; These don't feel very "lispy"		
+		(if (< (random 1.0) *float-mutation-probability*)
+			(if (eql (svref off1 x) 1)
+				(setf (svref off1 x) 0)
+				(setf (svref off1 x) 1)))
+		(if (< (random 1.0) *float-mutation-probability*)
+			(if (eql (svref off2 x) 1)
+		  	(setf (svref off2 x) 0)
+		  	(setf (svref off2 x) 1)))
+	)
+	;;(dprint "End of modifier")
+	;;(dprint ind1 "ind1:")
+	;;(dprint ind2 "ind2:")
+	
+	(list off1 off2))
 )
 
 (defun float-vector-sum-evaluator (ind1)
   "Evaluates an individual, which must be a floating point vector, and returns
 its fitness."
-
-    ;;; IMPLEMENT ME
+	(funcall *float-problem* ind1)
 )
-
-
-
 
 (defun float-vector-sum-setup ()
   "Does nothing.  Perhaps you might use this function to set
@@ -476,17 +495,6 @@ and the floating-point ranges involved, etc.  I dunno."
   :evaluator #'float-vector-sum-evaluator
 	:printer #'simple-printer)
 |#
-
-
-
-
-
-
-
-
-
-
-
 
 
 ;;;; GP TREE CREATION CODE
@@ -1158,6 +1166,16 @@ more pellets, higher (better) fitness."
  :modifier #'boolean-vector-modifier
  :evaluator #'boolean-vector-evaluator
  :printer #'simple-printer)
+)
+(defun f-test ()
+	(setf *debug* nil)
+	(evolve 50 100
+ 		:setup #'float-vector-sum-setup
+		:creator #'float-vector-creator
+		:selector #'tournament-selector
+		:modifier #'float-vector-modifier
+  	:evaluator #'float-vector-sum-evaluator
+		:printer #'simple-printer)
 )
 (defun ptc2-test ()
 	(setf *terminal-set* '(x))

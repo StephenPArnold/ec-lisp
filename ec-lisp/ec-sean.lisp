@@ -172,7 +172,7 @@ prints that fitness and individual in a pleasing manner."
 (defun evolve (generations pop-size
 	       &key setup creator selector modifier evaluator printer)
   "Evolves for some number of GENERATIONS, creating a population of size
-POP-SIZE, using various functions"
+POP-SIZE, using various functions (Algorithm 20)."
   ;; The functions passed in are as follows:
   ;;(SETUP)                     called at the beginning of evolution, to set up
   ;;                            global variables as necessary
@@ -204,7 +204,7 @@ POP-SIZE, using various functions"
 				(best-ind ()) ;; the best individual of the population
 				(best-list ()) ;; a list of the best fitnesses
 				(cycles 0)
-				(ideal 100))
+				(ideal (funcall setup)))
 ;;; Create initial population
 		(dotimes (p pop-size)
 			(setf population (append population (funcall creator))))
@@ -213,10 +213,9 @@ POP-SIZE, using various functions"
 		(loop do
 			(setf fitnesses ())
 			(dotimes (ind (length population))
-				;;(dprint ind "index")
+				(dprint ind "index")
 				(dprint (nth ind population) "here's the individual to evaluate")
 				(setf fit (funcall evaluator (nth ind population)))
-				(print "hello")
 				(setf fitnesses (append fitnesses (list fit)))
 				(dprint fit "fitness:")
 				(if (or (eql best nil) (> fit (funcall evaluator (nth best population))))
@@ -226,27 +225,19 @@ POP-SIZE, using various functions"
 			(dprint fitnesses "Fitnesses: ")
 			(dprint (nth best fitnesses) "best:")
 			(setf best-list (append best-list (list (nth best fitnesses))))
-			(print "got past that")
+			(funcall printer population fitnesses)
 			(setf q ())
 
 ;;; DAVID - do you think we can get rid of this "let" statement?
 			(let ((ind1 ())
 			      (ind2 ()))
-				(print "before loop")	
 				(dotimes (x  (ceiling (length population) 2))
-					(setf *debug* t)
-					(dprint x "Loop :")
-					(setf *debug* nil)
 					(setf ind1 (first (funcall selector 1 population fitnesses)))
 					(setf ind2 (first (funcall selector 1 population fitnesses)))
 					(setf q (append q (funcall modifier ind1 ind2)))))
 			(setf population q)
 			(dprint population "New Population: ")
 			(setf cycles (1+ cycles))
-			(print "cycles is")
-			(print cycles)
-			(print "generations is ")
-			(print generations)
 ;;; DAVID - not sure how I feel about the last part of the following line ... I wonder
 ;;; 				if there is a better way to check for 'fit' equating to ideal?
 		while (and (< cycles generations) (/= fit ideal)))
@@ -258,8 +249,7 @@ POP-SIZE, using various functions"
 ;;; 				vector as BEST-IND .... but doing so may make this function less-than-generic.
 ;;; 				Thoughts???
 ;;;
-		(print "hello2")
-		(funcall printer population fitnesses) ;; problem: prints cycle AFTER best discovered
+;;;		(funcall printer population fitnesses) ;; problem: prints cycle AFTER best discovered
 		
 		(print best-ind)
 		best-list
@@ -371,7 +361,10 @@ its fitness."
 (defun boolean-vector-sum-setup ()
   "Does nothing.  Perhaps you might use this to set up various
 (ahem) global variables to define the problem being evaluated, I dunno."
-  )
+  (let ((boolean-ideal 100))
+		boolean-ideal
+	)
+)
 
 ;;; an example way to fire up the GA.  It should easily discover
 ;;; a 100% correct solution.
@@ -423,10 +416,11 @@ its fitness."
 (defparameter *float-min* -5.12)  ;; these will change based on the problem
 (defparameter *float-max* 5.12)   ;; likewise
 
-(defun rastrigin (vec)
+(defun rastrigin (a vec)
 	"The <Rastrigin> Formula ... needs more description."
 	(let ((n (length vec)))
-		(+ (* 10 n) (reduce '+ (map 'vector #'(lambda (x) (- (* x x) (* 10 (cos (* 2 pi x))))) vec)))
+;;; Negated Rastrigin formula to account for *minimization* versus *maximization* problem
+		(* -1.0 (+ (* a n) (reduce '+ (map 'vector #'(lambda (x) (- (* x x) (* a (cos (* 2 pi x))))) vec))))
 	)
 )
 
@@ -435,7 +429,6 @@ its fitness."
 random numbers in the range appropriate to the given problem (Algorithm 7)."
 	(let ((vec (make-array *float-vector-length* :initial-element 0.0)))
 		(dotimes (x *float-vector-length*)
-			(print x)
 			(setf (svref vec x) (+ (random (- *float-max* *float-min*)) *float-min*))
 		)
 	(dprint (list vec) "vec:")
@@ -497,14 +490,17 @@ given allele in a child will mutate.  Mutation does gaussian convolution on the 
 (defun float-vector-sum-evaluator (ind1)
   "Evaluates an individual, which must be a floating point vector, and returns
 its fitness."
-	(rastrigin ind1)
+	(rastrigin 10.0 ind1)
 )
 
 (defun float-vector-sum-setup ()
   "Does nothing.  Perhaps you might use this function to set
 (ahem) various global variables which define the problem being evaluated
 and the floating-point ranges involved, etc.  I dunno."
-  )
+  (let ((float-ideal 0))
+		float-ideal
+	)
+)
 
 
 
@@ -1190,9 +1186,16 @@ more pellets, higher (better) fitness."
  		:evaluator #'boolean-vector-evaluator
  		:printer #'simple-printer)
 )
+
+; Some simple examples/unit tests of the Rastrigin function.
+; (assert (= 0.0 (rastrigin 10 '(0 0)))) ; This is the global minimum.
+; (assert (= 0.0 (rastrigin 10 '(0.0 0.0)))) ; This is the global minimum.
+; (assert (= 0.0 (rastrigin 10.0 '(0.0 0.0)))) ; This is the global minimum.
+; (assert (= 0.0 (rastrigin 10 '(0 0 0 0 0 0)))) ; This is the global minimum.
+
 (defun f-test ()
-	(setf *debug* t)
-	(evolve 5 100
+	(setf *debug* nil)
+	(evolve 50 100
  		:setup #'float-vector-sum-setup
 		:creator #'float-vector-creator
 		:selector #'tournament-selector
@@ -1289,7 +1292,6 @@ more pellets, higher (better) fitness."
 ;;                               :report :flat)
 ;;       (test-gp-symbolic))
 
-(e-test)
 ;;
 ;;(ptc2-test)
 ;;(num-nodes-test)

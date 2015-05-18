@@ -417,7 +417,10 @@ its fitness."
 (defparameter *float-max* 5.12)   ;; likewise
 
 (defun rastrigin (a vec)
-	"The <Rastrigin> Formula ... needs more description."
+	"The <Rastrigin> function s a non-convex function used as a performance test 
+problem for optimization algorithms. It is a typical example of non-linear multimodal 
+function. The formula has a global minimum at x=0. Negated to account for minimum-finding
+versus maximum-finding."
 	(let ((n (length vec)))
 ;;; Negated Rastrigin formula to account for *minimization* versus *maximization* problem
 		(* -1.0 (+ (* a n) (reduce '+ (map 'vector #'(lambda (x) (- (* x x) (* a (cos (* 2 pi x))))) vec))))

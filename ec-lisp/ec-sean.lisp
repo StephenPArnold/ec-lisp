@@ -460,20 +460,20 @@ given allele in a child will mutate.  Mutation does gaussian convolution on the 
 			)
 ;;; Alogo 11: Gaussian Convolution
 			(if (< (random 1.0) *float-mutation-probability*)
-				(loop do 
+				(progn (loop do 
 					(setf n (normal 0 *float-mutation-variance*))
 ;;;					(dprint n "Normal: ")
 ;;;					(dprint (svref off1 x) "Element1: ")
-				until (and (<= *float-min* (+ n (svref off1 x))) (>= *float-max* (+ n (svref off1 x)))))
-				(setf (svref off1 x) (+ n (svref off1 x)))
+				until (and (<= *float-min* (+ n (svref off1 x))) (<= (+ n (svref off1 x)) *float-max*)))
+				(setf (svref off1 x) (+ n (svref off1 x))))
 			)
 			(if (< (random 1.0) *float-mutation-probability*)
-				(loop do 
+				(progn (loop do 
 					(setf n (normal 0 *float-mutation-variance*))
 ;;;					(dprint n "Normal: ")
 ;;;					(dprint (svref off2 x) "Element2: ")
-				until (and (<= *float-min* (+ n (svref off2 x))) (>= *float-max* (+ n (svref off2 x)))))
-				(setf (svref off2 x) (+ n (svref off2 x)))
+				until (and (<= *float-min* (+ n (svref off2 x))) (<= (+ n (svref off2 x)) *float-max*)))
+				(setf (svref off2 x) (+ n (svref off2 x))))
 			)
 		)
 	;;(dprint "End of modifier")
@@ -1198,7 +1198,7 @@ more pellets, higher (better) fitness."
 
 (defun f-test ()
 	(setf *debug* nil)
-	(evolve 50 100
+	(evolve 500 100
  		:setup #'float-vector-sum-setup
 		:creator #'float-vector-creator
 		:selector #'tournament-selector

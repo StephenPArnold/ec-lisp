@@ -208,11 +208,15 @@ POP-SIZE, using various functions (Algorithm 20)."
 ;;; Create initial population
 		(dotimes (p pop-size)
 			(setf population (append population (funcall creator))))
+			
 		(dprint population "Original Population: ")
 ;;; Genetic Algorithm Main Loop (Algorithm 20)		
 		(loop do
+			(dprint "got to da top")
+			(funcall setup)
 			(setf fitnesses ())
 			(dotimes (ind (length population))
+				
 				(dprint ind "index")
 				(dprint (nth ind population) "here's the individual to evaluate")
 				(setf fit (funcall evaluator (nth ind population)))
@@ -238,6 +242,7 @@ POP-SIZE, using various functions (Algorithm 20)."
 			(setf population q)
 			(dprint population "New Population: ")
 			(setf cycles (1+ cycles))
+			(dprint "got to da bottom")
 ;;; DAVID - not sure how I feel about the last part of the following line ... I wonder
 ;;; 				if there is a better way to check for 'fit' equating to ideal?
 		while (and (< cycles generations) (/= fit ideal)))
@@ -711,40 +716,33 @@ If n is bigger than the number of nodes in the tree
 
 (defparameter *mutation-size-limit* 3)
 (defun crossover-gp (ind1 ind2)
-	(dprint "hello world")
-	(dprint (num-nodes ind1))
-	(dprint (num-nodes ind2))
 	(let (  (first-index 0)
 		(second-index 0)
 		(new-tree1 '())
 		(new-tree2 '())
-		(subtree1 (nth-subtree-parent ind1 (random (- (num-nodes ind1) 1)))) 
-		(subtree2 (nth-subtree-parent ind2 (random (- (num-nodes ind2) 1)))))
+		(subtree1 '())
+		(subtree2 '()))
+	
+		(if (> (length ind1) 1)	
+			(setf subtree1 (nth-subtree-parent ind1 (random (- (num-nodes ind1) 1))))
+			(setf subtree1 (list ind1 -1)))
+		(if (> (length ind2) 1)
+			(setf subtree2 (nth-subtree-parent ind2 (random (- (num-nodes ind2) 1))))
+			(setf subtree2 (list ind2 -1)))
 		
 		(setf first-index (+ (second subtree1) 1))
 		(setf second-index (+ (second subtree2) 1))
 
-		(dprint subtree1)
-		(dprint subtree2)
-		(dprint (first subtree1))
-		(dprint (first subtree2))
-		(dprint "first setf")
 		(setf new-tree1 (copy-tree (nth first-index (first subtree1))))
-		(dprint "second setf")
 		(setf new-tree2 (copy-tree (nth second-index (first subtree2))))
-		(dprint "third setf") 
 		(setf (nth first-index (first subtree1)) new-tree2) 
-		(dprint "fourth setf")
-		(dprint "subtree 2 is ")
-		(dprint subtree2)
 		(setf (nth second-index (first subtree2)) new-tree1) 
-		(dprint "done")
 		(list ind1 ind2)
 	) 
 )
 (defun modify-tree (ind1)
-	(print "BEFORE")
-	(print ind1)
+	(dprint "BEFORE")
+	(dprint ind1)
 	(dprint "hello world")
 	(dprint (num-nodes ind1))
 	(let (  (first-index 0)
@@ -760,10 +758,9 @@ If n is bigger than the number of nodes in the tree
 		;;(print "hi2")
 		(setf (nth first-index (first subtree1)) new-tree) 
 		;;(print "hi3")
-		(print "AFTER")
-		(print ind1)
+		(dprint "AFTER")
+		(dprint ind1)
 		(if (atom ind1) (print (/ 1 0)))
-		(sleep 1)
 		ind1			
 	)
 )
@@ -777,8 +774,7 @@ the two modified versions as a list."
 	(setf ind1 (copy-tree ind1))
 	(setf ind2 (copy-tree ind2))
 	(if (= (random 2) 0)
-		;;(crossover-gp ind1 ind2)
-		(list (modify-tree ind1) (modify-tree ind2))
+		(crossover-gp ind1 ind2)
 		(list (modify-tree ind1) (modify-tree ind2))
 	
 	)	
@@ -832,7 +828,9 @@ the two modified versions as a list."
 
   (setq *vals* nil)
   (dotimes (v *num-vals*)
-    (push (1- (random 2.0)) *vals*)))
+    (push (1- (random 2.0)) *vals*))
+	1
+)
 
 (defun poly-to-learn (x) (+ (* x x x x) (* x x x) (* x x) x))
 
@@ -868,18 +866,18 @@ returning most-positive-fixnum as the output of that expression."
 
 	(let ((sum 0.0))
 		(loop for x in *vals* do (progn
-			(print "some value in vals")
-			(print x)
-			(print "ind is ")
-			(print ind)
+			(dprint "some value in vals")
+			(dprint x)
+			(dprint "ind is ")
+			(dprint ind)
 			(setf *x* x)
 				(setf sum 
 					(+ sum (abs (- (float (eval ind)) (poly-to-learn x))))))	
 		)
-		(/ 1.0 (+ sum 1))
+		(if (not (equal sum nil)) (/ 1.0 (+ sum 1)) (0))
 	)
 	(error (condition)
-         		   (format t "~%Warning, ~a" condition) (return-from gp-symbolic-regression-evaluator most-positive-fixnum)))
+         		   (format t "~%Warning, ~a" condition) (return-from gp-symbolic-regression-evaluator 0)))
  
 	 ;;; IMPLEMENT ME
 
@@ -1258,17 +1256,17 @@ more pellets, higher (better) fitness."
 	(setf *debug* nil)
 	(setf *terminal-set* '(x))
 	(setf *nonterminal-set* '((+ 2) (- 2) (* 2) (% 2) (sin 1) (cos 1) (exp 1)))
- 	(print "doing that mutation 100 times")
+ 	(dprint "doing that mutation 100 times")
 	(dotimes (blah 100)
 		(print (modify-tree (copy-tree '(x)))))	
 	(setf *random-tree* (ptc2 5))
-	(print "randomtere:")
-	(print *random-tree*)
+	(dprint "randomtere:")
+	(dprint *random-tree*)
 	(dotimes (blah 10)
-		(print "origional:")
-		(print *random-tree*)
-		(print "modified:")
-		(print (modify-tree *random-tree*))
+		(dprint "origional:")
+		(dprint *random-tree*)
+		(dprint "modified:")
+		(dprint (modify-tree *random-tree*))
 ))
 (defun test-gp-evaluator ()
 	(gp-symbolic-regression-setup)	
@@ -1279,18 +1277,17 @@ more pellets, higher (better) fitness."
 
 )
 (defun test-gp-symbolic ()
-	(gp-symbolic-regression-setup)	
-	(evolve 10 10
+(evolve 50 5000
  	:setup #'gp-symbolic-regression-setup
 	:creator #'gp-creator
 	:selector #'tournament-selector
 	:modifier #'gp-modifier
-  	:evaluator #'gp-symbolic-regression-evaluator
+  :evaluator #'gp-symbolic-regression-evaluator
 	:printer #'simple-printer)
-
+	(gp-symbolic-regression-setup)	
 )
-
-;;     (sb-sprof:with-profiling (:max-samples 10000
+(setf *debug* nil)
+;;     (sb-sprof:with-profiling (:max-samples 1000000
 ;;                               :mode :alloc
 ;;                               :report :flat)
 ;;       (test-gp-symbolic))
@@ -1302,6 +1299,5 @@ more pellets, higher (better) fitness."
 ;;(crossover-test)
 ;;(modify-tree-test)
 ;;(test-gp-evaluator)
-
 
 ;;(print "hey i finished at least")

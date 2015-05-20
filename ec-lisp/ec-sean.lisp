@@ -426,9 +426,14 @@ its fitness."
 problem for optimization algorithms. It is a typical example of non-linear multimodal 
 function. The formula has a global minimum at x=0. Negated to account for minimum-finding
 versus maximum-finding."
-	(let ((n (length vec)))
+	(let ((n (length vec))
+				(sub-total 0.0))
 ;;; Negated Rastrigin formula to account for *minimization* versus *maximization* problem
 		(* -1.0 (+ (* a n) (reduce '+ (map 'vector #'(lambda (x) (- (* x x) (* a (cos (* 2 pi x))))) vec))))
+;;;		(dotimes (x n) 
+;;;			(setf sub-total (+ sub-total (- (* (svref vec x) (svref vec x)) (* a (cos (* 2 pi (svref vec x)))))))
+;;;		)
+;;;		(setf sub-total (* -1 (+ (* 10 n) sub-total)))
 	)
 )
 
@@ -465,7 +470,7 @@ given allele in a child will mutate.  Mutation does gaussian convolution on the 
 	(let ((off1 (copy-seq ind1))
 				(off2 (copy-seq ind2))
 				(n 0.0))
-		(dotimes (x (length ind1))
+		(dotimes (x (length off1))
 ;;(dprint x "Entering modifier step: ")
 			(if (< (random 1.0) *float-crossover-probability*)
 				(swap (svref off1 x) (svref off2 x))
@@ -483,7 +488,7 @@ given allele in a child will mutate.  Mutation does gaussian convolution on the 
 			(if (< (random 1.0) *float-mutation-probability*)
 				(progn 
 					(loop do 
-						(setf n (first (bmm 0 *float-mutation-variance*)))
+						(setf n (second (bmm 0 *float-mutation-variance*)))
 ;;;					(dprint n "Normal: ")
 ;;;					(dprint (svref off2 x) "Element2: ")
 					until (and (<= *float-min* (+ n (svref off2 x))) (<= (+ n (svref off2 x)) *float-max*)))
@@ -1221,7 +1226,7 @@ more pellets, higher (better) fitness."
 ; (assert (= 0.0 (rastrigin 10 '(0 0 0 0 0 0)))) ; This is the global minimum.
 
 (defun f-test ()
-	(setf *debug* nil)
+	(setf *debug* t)
 	(evolve 50 100
  		:setup #'float-vector-sum-setup
 		:creator #'float-vector-creator

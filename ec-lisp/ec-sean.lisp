@@ -432,6 +432,13 @@ versus maximum-finding."
 	)
 )
 
+(defun simple-sum (vec)
+	"An attempt at a simple sum of the supplied vector argument." 
+	(let ((n (length vec)))
+		(* 1.0 (reduce '+ (map 'vector #'(lambda (x) x) vec)))
+	)
+)
+
 (defun float-vector-creator ()
   "Creates a floating-point-vector *float-vector-length* in size, filled with
 random numbers in the range appropriate to the given problem (Algorithm 7)."
@@ -465,20 +472,22 @@ given allele in a child will mutate.  Mutation does gaussian convolution on the 
 			)
 ;;; Alogo 11: Gaussian Convolution
 			(if (< (random 1.0) *float-mutation-probability*)
-				(progn (loop do 
-					(setf n (normal 0 *float-mutation-variance*))
+				(progn 
+					(loop do 
+						(setf n (first (bmm 0 *float-mutation-variance*)))
 ;;;					(dprint n "Normal: ")
 ;;;					(dprint (svref off1 x) "Element1: ")
-				until (and (<= *float-min* (+ n (svref off1 x))) (<= (+ n (svref off1 x)) *float-max*)))
-				(setf (svref off1 x) (+ n (svref off1 x))))
+					until (and (<= *float-min* (+ n (svref off1 x))) (<= (+ n (svref off1 x)) *float-max*)))
+					(setf (svref off1 x) (+ n (svref off1 x))))
 			)
 			(if (< (random 1.0) *float-mutation-probability*)
-				(progn (loop do 
-					(setf n (normal 0 *float-mutation-variance*))
+				(progn 
+					(loop do 
+						(setf n (first (bmm 0 *float-mutation-variance*)))
 ;;;					(dprint n "Normal: ")
 ;;;					(dprint (svref off2 x) "Element2: ")
-				until (and (<= *float-min* (+ n (svref off2 x))) (<= (+ n (svref off2 x)) *float-max*)))
-				(setf (svref off2 x) (+ n (svref off2 x))))
+					until (and (<= *float-min* (+ n (svref off2 x))) (<= (+ n (svref off2 x)) *float-max*)))
+					(setf (svref off2 x) (+ n (svref off2 x))))
 			)
 		)
 	;;(dprint "End of modifier")
@@ -495,10 +504,27 @@ given allele in a child will mutate.  Mutation does gaussian convolution on the 
   	(v (random 1.0)))
   	    (+ mu (* sigma (sqrt (* -2 (log (- 1.0 u)))) (cos (* 2 pi v))))))
 
+;;; Box-Muller-Marsaglia Method
+(defun bmm (&optional (mu 0) (var 1))
+	"Creates a pair of random numbers using the Box-Muller-Marsaglia
+Method (Algorithm 12)."
+	(let ((sigma (sqrt var)))
+		(loop do
+			(setf x (- (random 2.0) 1.0))
+			(setf y (- (random 2.0) 1.0))
+			(setf w (+ (* x x) (* y y)))
+		until (and (> w 0) (< w 1)))
+		(setf g (+ mu (* x sigma (sqrt (* -2 (float (/ (log w) w)))))))
+		(setf h (+ mu (* y sigma (sqrt (* -2 (float (/ (log w) w)))))))
+		(list g h)
+	)
+)
+
 (defun float-vector-sum-evaluator (ind1)
   "Evaluates an individual, which must be a floating point vector, and returns
 its fitness."
 	(rastrigin 10.0 ind1)
+;;	(simple-sum ind1)
 )
 
 (defun float-vector-sum-setup ()
@@ -1196,7 +1222,7 @@ more pellets, higher (better) fitness."
 
 (defun f-test ()
 	(setf *debug* nil)
-	(evolve 500 100
+	(evolve 50 100
  		:setup #'float-vector-sum-setup
 		:creator #'float-vector-creator
 		:selector #'tournament-selector

@@ -1,11 +1,7 @@
-;;TAKEN FORM STACK OVERFLOW TO QUIET THOSE WARNINGS
-(locally    (declare #+sbcl(sb-ext:muffle-conditions sb-kernel:redefinition-warning))
-  (handler-bind
-      (#+sbcl(sb-kernel:redefinition-warning #'muffle-warning))
-    ;; stuff that emits redefinition-warning's
-    ))
+(declaim (optimize (speed 3) (space 0) (safety 0) (debug 0) (compilation-speed 0)))
 
-;;; Project 4: Build a simple evolutionary computation system.
+
+;; Project 4: Build a simple evolutionary computation system.
 (setf *random-state* (make-random-state t))
 (require :sb-sprof)
 
@@ -1235,6 +1231,7 @@ where the ant had gone."
 ;; I provide this for you
 (defun gp-artificial-ant-setup ()
   "Sets up vals"
+  (setf *tournament-size* 4)
   (setq *nonterminal-set* '((if-food-ahead 2) (progn2 2) (progn3 3) ))
   (setq *terminal-set* '(left right move))
   (setq *map* (make-map *map-strs*))
@@ -1266,12 +1263,15 @@ where the ant had gone."
 	(setf ind (pre-process ind))
 	(dprint "preprocess 2")
 	(dprint ind)
-	(block dotimes
-		(dotimes (x *num-moves*)
-			(eval ind)
-			(if (> *current-move* *num-moves*) (return-from dotimes nil))
-	))
-	*eaten-pellets*
+	
+	(setf real-individual 
+		`(progn (block dotimes
+			(dotimes (x *num-moves*)
+				,ind
+				(if (> *current-move* *num-moves*) (return-from dotimes nil))
+		))
+		*eaten-pellets*))
+	(eval real-individual)
 	
       ;;; IMPLEMENT ME
 )
@@ -1440,7 +1440,7 @@ where the ant had gone."
 (setf *debug* nil)
 
 (defun test-ant ()
-	(evolve 10 50
+	(evolve 50 500
  	:setup #'gp-artificial-ant-setup
 	:creator #'gp-creator
 	:selector #'tournament-selector
@@ -1449,6 +1449,9 @@ where the ant had gone."
 	:printer #'simple-printer)
 
 )
+(declaim (optimize (speed 0) (space 0) (safety 0) (debug 0) (compilation-speed 3)))
+
+
 ;;     (sb-sprof:with-profiling (:max-samples 1000000
 ;;                               :mode :alloc
 ;;                               :report :flat)

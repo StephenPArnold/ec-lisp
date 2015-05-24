@@ -1326,7 +1326,12 @@ where the ant had gone."
  (assert (= 0.0 (rastrigin 10 '(0 0 0 0 0 0)))) ; This is the global minimum.
 
 (defun f-test ()
-	(setf *debug* t)
+	(setf *debug* nil)
+; Some simple examples/unit tests of the Rastrigin function.
+ (assert (= 0.0 (rastrigin 10 '(0 0)))) ; This is the global minimum.
+ (assert (= 0.0 (rastrigin 10 '(0.0 0.0)))) ; This is the global minimum.
+ (assert (= 0.0 (rastrigin 10.0 '(0.0 0.0)))) ; This is the global minimum.
+ (assert (= 0.0 (rastrigin 10 '(0 0 0 0 0 0)))) ; This is the global minimum.
 	(evolve 50 100
  		:setup #'float-vector-sum-setup
 		:creator #'float-vector-creator

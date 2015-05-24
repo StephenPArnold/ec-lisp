@@ -1,3 +1,10 @@
+;;TAKEN FORM STACK OVERFLOW TO QUIET THOSE WARNINGS
+(locally    (declare #+sbcl(sb-ext:muffle-conditions sb-kernel:redefinition-warning))
+  (handler-bind
+      (#+sbcl(sb-kernel:redefinition-warning #'muffle-warning))
+    ;; stuff that emits redefinition-warning's
+    ))
+
 ;;; Project 4: Build a simple evolutionary computation system.
 (setf *random-state* (make-random-state t))
 (require :sb-sprof)
@@ -159,8 +166,11 @@ new slot is created).  EQUALP is the test used for duplicates."
 (defun simple-printer (pop fitnesses)  ;; I'm nice and am providing this for you.  :-)
   "Determines the individual in pop with the best (highest) fitness, then
 prints that fitness and individual in a pleasing manner."
-  (let (best-ind best-fit)
-    (mapcar #'(lambda (ind fit)
+(let (best-ind best-fit)
+    (print "random guy:")
+    (print (get-random-element pop)) 
+  
+   (mapcar #'(lambda (ind fit)
 		(when (or (not best-ind)
 			  (< best-fit fit))
 		  (setq best-ind ind)
@@ -195,7 +205,6 @@ POP-SIZE, using various functions (Algorithm 20)."
   ;; your function should call PRINTER each generation, and also print out or the
   ;; best individual discovered over the whole run at the end, plus its fitness
   ;; and any other statistics you think might be nifty.
-
 ;;; DAVID - could the variable declarations (below) go into the unused function "boolean-vector-sum-setup"? 
 	(let ((population ())
 				(fitnesses ()) ;; Might be able to use a lambda function to "create" fitnesses on the fly.
@@ -213,7 +222,7 @@ POP-SIZE, using various functions (Algorithm 20)."
 ;;; Genetic Algorithm Main Loop (Algorithm 20)		
 		(loop do
 			(dprint "got to da top")
-			(funcall setup)
+			;;(funcall setup)
 			(setf fitnesses ())
 			(dotimes (ind (length population))
 				
@@ -221,7 +230,9 @@ POP-SIZE, using various functions (Algorithm 20)."
 				(dprint (nth ind population) "here's the individual to evaluate")
 				(setf fit (funcall evaluator (nth ind population)))
 				(setf fitnesses (append fitnesses (list fit)))
+				(setf *debug* t)
 				(dprint fit "fitness:")
+				(setf *debug* nil)
 				(if (or (eql best nil) (> fit (funcall evaluator (nth best population))))
 					(setf best ind)))
 			(setf best-ind (nth best population))
@@ -242,7 +253,9 @@ POP-SIZE, using various functions (Algorithm 20)."
 			(setf population q)
 			(dprint population "New Population: ")
 			(setf cycles (1+ cycles))
-			(dprint "got to da bottom")
+			(print "got to da bottom")
+			(print cycles)
+			(print fit)
 ;;; DAVID - not sure how I feel about the last part of the following line ... I wonder
 ;;; 				if there is a better way to check for 'fit' equating to ideal?
 		while (and (< cycles generations) (/= fit ideal)))
@@ -655,7 +668,7 @@ Error generated if the queue is empty."
   "Picks a random number from 1 to 20, then uses ptc2 to create
 a tree of that size"
 	(print "HEY HERE'S SPMETJNG I MADE")
-	(print (list (ptc2 (+ (random 20) 1))))
+	(print (list (ptc2 (+ (random *size-limit*) 1))))
 
 )
 
@@ -673,6 +686,15 @@ a tree of that size"
     )
 )
 
+(defun pre-process (tree)
+    (setf tree (macroexpand tree))
+    (let ((sum 0));;nice simple recursive implementation for counting of nodes
+	(dotimes (n (length tree))
+    		(if (atom (nth n tree)) (incf sum)  (progn (setf (nth n tree) (macroexpand (nth n tree))) (setf (nth n tree) (pre-process (nth n tree)))))
+	)
+	tree;;return value	
+    )
+)
 
 (defun nth-subtree-parent (tree n)
   "Given a tree, finds the nth node by depth-first search though
@@ -745,8 +767,17 @@ If n is bigger than the number of nodes in the tree
   )
 
 
-(defparameter *mutation-size-limit* 3)
+(defparameter *mutation-size-limit* 10)
 (defun crossover-gp (ind1 ind2)
+	(dprint "before")
+	
+	(eval ind1)
+	(eval ind2)
+	(dprint "ind1: ")
+	(dprint ind1)
+	(dprint "ind2:")
+	(dprint ind2)
+	(dprint "after first eval")
 	(let (  (first-index 0)
 		(second-index 0)
 		(new-tree1 '())
@@ -756,10 +787,10 @@ If n is bigger than the number of nodes in the tree
 	
 		(if (> (length ind1) 1)	
 			(setf subtree1 (nth-subtree-parent ind1 (random (- (num-nodes ind1) 1))))
-			(setf subtree1 (list ind1 -1)))
+			(setf subtree1 (list (list ind1) -1)))
 		(if (> (length ind2) 1)
 			(setf subtree2 (nth-subtree-parent ind2 (random (- (num-nodes ind2) 1))))
-			(setf subtree2 (list ind2 -1)))
+			(setf subtree2 (list (list ind2) -1)))
 		
 		(setf first-index (+ (second subtree1) 1))
 		(setf second-index (+ (second subtree2) 1))
@@ -768,8 +799,21 @@ If n is bigger than the number of nodes in the tree
 		(setf new-tree2 (copy-tree (nth second-index (first subtree2))))
 		(setf (nth first-index (first subtree1)) new-tree2) 
 		(setf (nth second-index (first subtree2)) new-tree1) 
+		(if (and (= 1 (length ind1) ) (not (atom (first ind1)))) (setf ind1 (first ind1)))
+		(if (and (= 1 (length ind2) ) (not (atom (first ind1)))) (setf ind2 (first ind2)))
 		(list ind1 ind2)
 	) 
+	(dprint "beofre2")
+	(dprint "ind1: ")
+        (dprint ind1)
+        (dprint "ind2:")
+        (dprint ind2)
+	
+	(eval ind1)
+	(eval ind2)
+	
+	(dprint "after2")
+	(list ind1 ind2)
 )
 (defun modify-tree (ind1)
 	(dprint "BEFORE")
@@ -794,6 +838,10 @@ If n is bigger than the number of nodes in the tree
 		(if (atom ind1) (print (/ 1 0)))
 		ind1			
 	)
+	(dprint "before eval")
+	(eval ind1)
+	(dprint "after eval")
+	ind1
 )
 (defun gp-modifier (ind1 ind2)
   "Flips a coin.  If it's heads, then ind1 and ind2 are
@@ -847,14 +895,16 @@ the two modified versions as a list."
 
 ;;; GP SYMBOLIC REGRESSION SETUP
 ;;; (I provide this for you)
-
+(defun nothing (one two three)
+	one
+)
 (defparameter *num-vals* 20)
 (defparameter *vals* nil) ;; gets set in gp-setup
 
 (defun gp-symbolic-regression-setup ()
   "Defines the function sets, and sets up vals"
 
-  (setq *nonterminal-set* '((+ 2) (- 2) (* 2) (% 2) (sin 1) (cos 1) (exp 1)))
+  (setq *nonterminal-set* '((+ 2) (- 2) (* 2) (% 2) (sin 1) (cos 1) (exp 1) (nothing 3) ))
   (setq *terminal-set* '(x))
 
   (setq *vals* nil)
@@ -1086,7 +1136,8 @@ and returns that."
 (defmacro x-pos-at (x-pos absolute-dir &optional (steps 1))
   "Returns the new x position if one moved STEPS steps the absolute-dir
 direction from the given x position.  Toroidal."
-  `(mod (cond ((= (mod ,absolute-dir 2) *n*) ,x-pos)         ;; n or s
+
+   `(mod (cond ((= (mod ,absolute-dir 2) *n*) ,x-pos)         ;; n or s
 	      ((= ,absolute-dir *e*) (+ ,x-pos ,steps))     ;; e
 	      (t (+ ,x-pos (- ,steps) *map-width*)))         ;; w
 	*map-width*))
@@ -1114,10 +1165,14 @@ direction from the given y position.  Toroidal."
 ;;; the function set you have to implement
 
 (defmacro if-food-ahead (then else)
-  "If there is food directly ahead of the ant, then THEN is evaluated,
-else ELSE is evaluated"
+  "If there is food directly ahead of the ant, then THEN is evaluated,else ELSE is evaluated"
   ;; because this is an if/then statement, it MUST be implemented as a macro.
+   `(if 
+      (aref *map* (x-pos-at *current-x-pos* *current-ant-dir*) (y-pos-at *current-y-pos* *current-ant-dir*))
+      ,else
+	  ,then)
 
+    
     ;;; IMPLEMENT ME
 )
 
@@ -1136,20 +1191,41 @@ else ELSE is evaluated"
 and moves the ant forward, consuming any pellet under the new square where the
 ant is now.  Perhaps it might be nice to leave a little trail in the map showing
 where the ant had gone."
-
+		(incf *current-move*)
+		(if (< *current-move* *num-moves*) (progn
+			
+			
+			;;mark my path
+			(setf (aref *map* *current-x-pos* *current-y-pos*) (direction-to-arrow *current-ant-dir* ))
+			;;actually move
+			(setf *current-x-pos* (x-pos-at *current-x-pos* *current-ant-dir*))
+			(setf *current-y-pos* (y-pos-at *current-y-pos* *current-ant-dir*))
+			;;did i find food?
+			(if (equal (aref *map* *current-x-pos* *current-y-pos*) nil)
+				(incf *eaten-pellets*)
+				
+			)
+		))
       ;;; IMPLEMENT ME
   )
 
 
 (defun left ()
   "Increments the move count, and turns the ant left"
-
+	(incf *current-move*)
+	(if (< *current-move* *num-moves*)
+		(setf *current-ant-dir* (absolute-direction -1 *current-ant-dir*))
+	)
+		
       ;;; IMPLEMENT ME
 )
 
 (defun right ()
   "Increments the move count, and turns the ant right"
-
+	(incf *current-move*)
+	(if (< *current-move* *num-moves*)
+		(setf *current-ant-dir* (absolute-direction 1 *current-ant-dir*))
+	)
       ;;; IMPLEMENT ME
 )
 
@@ -1159,20 +1235,44 @@ where the ant had gone."
 ;; I provide this for you
 (defun gp-artificial-ant-setup ()
   "Sets up vals"
-  (setq *nonterminal-set* '((if-food-ahead 2) (progn2 2) (progn3 3)))
+  (setq *nonterminal-set* '((if-food-ahead 2) (progn2 2) (progn3 3) ))
   (setq *terminal-set* '(left right move))
   (setq *map* (make-map *map-strs*))
   (setq *current-move* 0)
-  (setq *eaten-pellets* 0))
+  (setq *eaten-pellets* 0)
+  (setf *num-moves 600)
+  (setf *size-limit* 20)
+  89
+)
 
 
 ;; you'll need to implement this as well
 
 (defun gp-artificial-ant-evaluator (ind)
-  "Evaluates an individual by putting it in a fresh map and letting it run
-for *num-moves* moves.  The fitness is the number of pellets eaten -- thus
-more pellets, higher (better) fitness."
-
+  "Evaluates an individual by putting it in a fresh map and letting it runfor *num-moves* moves.  The fitness is the number of pellets eaten -- thusmore pellets, higher (better) fitness."
+ 	(setf *map* (make-map *map-strs*))
+  	(setf *current-move* 0)
+  	(setf *eaten-pellets* 0)	
+	(setf *current-ant-dir* 0)
+	(setf *current-x-pos* 0)
+	(setf *current-y-pos* 0)
+	(dprint "before")
+	(dprint ind)
+	(setf ind (copy-tree ind))
+	(dotimes (x 10)
+	(setf ind (pre-process ind)))
+	(dprint "preprocess 1")
+	(dprint ind)
+	(setf ind (pre-process ind))
+	(dprint "preprocess 2")
+	(dprint ind)
+	(block dotimes
+		(dotimes (x *num-moves*)
+			(eval ind)
+			(if (> *current-move* *num-moves*) (return-from dotimes nil))
+	))
+	*eaten-pellets*
+	
       ;;; IMPLEMENT ME
 )
 
@@ -1220,10 +1320,10 @@ more pellets, higher (better) fitness."
 )
 
 ; Some simple examples/unit tests of the Rastrigin function.
-; (assert (= 0.0 (rastrigin 10 '(0 0)))) ; This is the global minimum.
-; (assert (= 0.0 (rastrigin 10 '(0.0 0.0)))) ; This is the global minimum.
-; (assert (= 0.0 (rastrigin 10.0 '(0.0 0.0)))) ; This is the global minimum.
-; (assert (= 0.0 (rastrigin 10 '(0 0 0 0 0 0)))) ; This is the global minimum.
+ (assert (= 0.0 (print (rastrigin 10 '(0 0))))) ; This is the global minimum.
+ (assert (= 0.0 (rastrigin 10 '(0.0 0.0)))) ; This is the global minimum.
+ (assert (= 0.0 (rastrigin 10.0 '(0.0 0.0)))) ; This is the global minimum.
+ (assert (= 0.0 (rastrigin 10 '(0 0 0 0 0 0)))) ; This is the global minimum.
 
 (defun f-test ()
 	(setf *debug* t)
@@ -1245,6 +1345,18 @@ more pellets, higher (better) fitness."
 	(print "here's (ptc2 10)")
 	(print (ptc2 10))
 
+)
+(defun ptc2-test-ant ()
+	(gp-artificial-ant-setup)
+ 
+
+	(print "here's (ptc2 1)")
+	(print (ptc2 1))
+	(print "here's (ptc2 10)")
+	(print (ptc2 10))
+
+	(dotimes (n 10000)
+		(eval (ptc2 (+ 1 (random 20)))))
 )
 (defun num-nodes-test ()
 	(setf expression (ptc2 10))
@@ -1308,7 +1420,7 @@ more pellets, higher (better) fitness."
 
 )
 (defun test-gp-symbolic ()
-(evolve 50 5000
+(evolve 50 500
  	:setup #'gp-symbolic-regression-setup
 	:creator #'gp-creator
 	:selector #'tournament-selector
@@ -1317,18 +1429,39 @@ more pellets, higher (better) fitness."
 	:printer #'simple-printer)
 	(gp-symbolic-regression-setup)	
 )
+(defun test-float ()
+(evolve 100 10000
+ 	:setup #'float-vector-sum-setup
+	:creator #'float-vector-creator
+	:selector #'tournament-selector
+	:modifier #'float-vector-modifier
+  :evaluator #'float-vector-sum-evaluator
+	:printer #'simple-printer))
 (setf *debug* nil)
+
+(defun test-ant ()
+	(evolve 10 50
+ 	:setup #'gp-artificial-ant-setup
+	:creator #'gp-creator
+	:selector #'tournament-selector
+	:modifier #'gp-modifier
+  :evaluator #'gp-artificial-ant-evaluator
+	:printer #'simple-printer)
+
+)
 ;;     (sb-sprof:with-profiling (:max-samples 1000000
 ;;                               :mode :alloc
 ;;                               :report :flat)
-;;       (test-gp-symbolic))
-
-;;
+;;       (test-ant))
+(test-ant)
+;;(test-gp-symbolic);;
 ;;(ptc2-test)
 ;;(num-nodes-test)
 ;;(test-subtree)
 ;;(crossover-test)
 ;;(modify-tree-test)
 ;;(test-gp-evaluator)
-
+;;(test-ant)
+;;(ptc2-test-ant)
+(print-map *map*)
 ;;(print "hey i finished at least")
